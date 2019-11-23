@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  clock-in-bot:
+    build: ./backend
+    restart: always
+    env_file:
+      - backend/.env
+    ports:
+      - "12121:80"
+    networks:
+      - default
+
+
