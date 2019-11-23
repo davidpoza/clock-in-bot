@@ -5,7 +5,7 @@ services:
     build: ./
     restart: always
     env_file:
-      - backend/.env
+      - .env
     ports:
       - "12121:80"
     networks:
