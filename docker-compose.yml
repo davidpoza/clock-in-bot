@@ -2,7 +2,7 @@ version: '3'
 
 services:
   clock-in-bot:
-    build: ./backend
+    build: ./
     restart: always
     env_file:
       - backend/.env
