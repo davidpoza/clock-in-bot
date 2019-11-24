@@ -6,8 +6,6 @@ const moment=require('moment');
 const get=require('lodash.get');
 const fetch=require('node-fetch');
 
-console.log(process.env);
-
 isFromMe=(ctx, fn, fn_anonymous=() => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
   get(ctx, 'update.message.from.username') === process.env.TELEGRAM_USERNAME ? fn() : fn_anonymous && fn_anonymous();
 };
