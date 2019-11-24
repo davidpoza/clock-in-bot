@@ -7,7 +7,7 @@ const get = require('lodash.get');
 const fetch = require('node-fetch');
 
 isFromMe = (ctx, fn, fn_anonymous = () => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
-  get(ctx, 'update.message.from.username') === 'davidpoza' ? fn() : fn_anonymous && fn_anonymous();
+  get(ctx, 'update.message.from.username') === process.env.TELEGRAM_USERNAME ? fn() : fn_anonymous && fn_anonymous();
 };
 
 getChatId = (ctx) => {
@@ -42,23 +42,102 @@ parseCookie = (str) => {
   return (regex.exec(str)[1]);
 }
 
-initJobs = () => {
-  globalTimer = schedule.scheduleJob('0 0 0 * * *', () => {
+getDomain = (str) => {
+  const regex = /https?:\/\/(.*)$/;
+  return (regex.exec(str)[1]);
+}
+
+initJobs = (ctx) => {
+  globalTimer = schedule.scheduleJob('0 17 18 * * *', () => {
     if (!isWorkday(moment(), daysOff, holidays)) {
-      const clockInHour = moment(`${randomHour(process.env.MIN_START_HOUR, process.env.MAX_START_HOUR)} ${moment().format('DD/MM/YYYY')}`, 'HH:mm DD/MM/YYYY');
+      const clockInHour = moment(`18:18 ${moment().format('DD/MM/YYYY')}`, 'HH:mm DD/MM/YYYY');
       const workingTimeDurationInMins = randomNumber(minWorkingTimeDuration, maxWorkingTimeDuration);
       const clockOutHour = moment(clockInHour).add(workingTimeDurationInMins, 'minutes');
-      bot.telegram.sendMessage(chatId, `hora de entrada: ${clockInHour.format("HH:mm")}`);
-      bot.telegram.sendMessage(chatId, `hora de salida: ${clockOutHour.format("HH:mm")}`);
+      bot.telegram.sendMessage(chatId, `I\`m going to start work at: ${clockInHour.format("HH:mm")}`);
+      bot.telegram.sendMessage(chatId, `I\`m going to finish work at: ${clockOutHour.format("HH:mm")}`);
       clockInTimer = schedule.scheduleJob(clockInHour.toDate(), () => {
-
+        clockInCommand(ctx);
       });
       clockOutTimer = schedule.scheduleJob(clockOutHour.toDate(), () => {
-
+        clockOutCommand(ctx);
       });
     }
   });
 };
+
+login = () => {
+  return fetch(process.env.BASE_URL+process.env.LOGIN_URL, {
+    method: 'POST',
+    credentials: 'include',
+    mode: "cors",
+    headers: {
+      'Accept-Encoding': 'gzip, deflate',
+      'Connection': 'keep-alive',
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
+      'X-Requested-With': 'XMLHttpRequest',
+      Accept: '*/*',
+      Host: getDomain(process.env.BASE_URL),
+      Origin: process.env.BASE_URL,
+    },
+    referrer: process.env.BASE_URL + '/',
+    referrerPolicy: 'no-referrer-when-downgrade',
+    body: `numIntentos=&usuario=${process.env.LOGIN_USERNAME}&password=${process.env.LOGIN_PASSWORD}&g-recaptcha-response=`,
+  })
+}
+
+clockInOut = (cookie, endpoint) => {
+  return fetch(process.env.BASE_URL+endpoint, {
+    method: 'POST',
+    mode: "cors",
+    credentials: 'include',
+    headers: {
+      'Accept-Encoding': 'gzip, deflate',
+      'Accept-Language': 'es,en;q=0.9,en-GB;q=0.8,sr;q=0.7',
+      'Connection': 'keep-alive',
+      'Content-Length': '0',
+      'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
+      'X-Requested-With': 'XMLHttpRequest',
+      Accept: '*/*',
+      Cookie: cookie,
+      Host: getDomain(process.env.BASE_URL),
+      Origin: process.env.BASE_URL,
+    },
+    referrer: process.env.BASE_URL + '/',
+  });
+}
+
+clockInCommand = (ctx) => {
+  isFromMe(ctx, () => {
+    login()
+      .then((res) => {
+        const jsessionid = parseCookie(res.headers.raw()['set-cookie']);
+        return clockInOut(jsessionid, process.env.START_WORK_ENDPOINT);
+      })
+      .then((res) => {
+        bot.telegram.sendMessage(chatId, 'I\'ve just clock-in my friend.👍');
+      })
+      .catch((err) => {
+        bot.telegram.sendMessage(chatId, 'Error ocurred on clock-in: ', err);
+      });
+  });
+}
+
+clockOutCommand = (ctx) => {
+  isFromMe(ctx, () => {
+    login()
+      .then((res) => {
+        const jsessionid = parseCookie(res.headers.raw()['set-cookie']);
+        return clockInOut(jsessionid, process.env.END_WORK_ENDPOINT);
+      })
+      .then((res) => {
+        bot.telegram.sendMessage(chatId, 'I\'ve just clock-out!!. What such a hard working day👏🏼.');
+      })
+      .catch((err) => {
+        bot.telegram.sendMessage(chatId, 'Error ocurred on clock-out: ', err);
+      });
+  });
+}
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 let daysOff = [
@@ -94,81 +173,44 @@ const maxWorkingTimeDuration = process.env.MAX_WORKINGDAY_DURATION*60; //in minu
 
 bot.start((ctx) => {
   isFromMe(ctx, () => {
+    ctx.reply(`Welcome ${process.env.TELEGRAM_USERNAME}!`);
     ctx.reply('Bot initialized!');
     ctx.reply('Setting jobs...');
     chatId = getChatId(ctx);
-    initJobs();
+    initJobs(ctx);
   }, () => {
-    ctx.reply("I don't know who you are... I'll ignore you.");
-  });
-});
-bot.command('init_timer', (ctx) => {
-  isFromMe(ctx, () => {
-    let date = new moment().add(1, 'minutes').toDate();
-    j = schedule.scheduleJob(date, () => {
-      console.log('ha pasado un minuto');
-      ctx.reply('Ya ha pasado un minuto');
-    });
-    ctx.reply('Te avisaré en un minuto');
+    ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });
 });
 
-bot.command('login', (ctx) => {
-  isFromMe(ctx, () => {
-    fetch(process.env.BASE_URL+process.env.LOGIN_URL, {
-      method: 'POST',
-      credentials: 'include',
-      mode: "cors",
-      headers: {
-        Accept: '*/*',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Host: 'gestionitt.grupo-arelance.com',
-        Origin: 'http://gestionitt.grupo-arelance.com',
-        'Accept-Encoding': 'gzip, deflate',
-        'Connection': 'keep-alive',
-        Referer: 'http://gestionitt.grupo-arelance.com/',
-      },
-      referrer: "http://gestionitt.grupo-arelance.com/",
-      body: JSON.stringify({
-        usuario: process.env.USERNAME,
-        password: process.env.PASSWORD,
-      }),
-    })
-      .then((res) => {
-        const jsessionid = parseCookie(res.headers.raw()['set-cookie']);
-        console.log(jsessionid)
-        return fetch(process.env.BASE_URL+process.env.START_WORK_URL, {
-          method: 'POST',
-          mode: "cors",
-          credentials: 'include',
-          headers: {
-            Accept: '*/*',
-            'Content-Length': '0',
-            Cookie: jsessionid,
-            //Cookie: 'JSESSIONID=B500EF35EC941D1AF82D29412290E5F0',
-            'Accept-Encoding': 'gzip, deflate',
-            'Connection': 'keep-alive',
-            'Accept-Language': 'es,en;q=0.9,en-GB;q=0.8,sr;q=0.7',
-            Host: 'gestionitt.grupo-arelance.com',
-            Origin: 'http://gestionitt.grupo-arelance.com',
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
-            'X-Requested-With': 'XMLHttpRequest',
-            Referer: 'http://gestionitt.grupo-arelance.com/',
-          },
-          referrer: "http://gestionitt.grupo-arelance.com/",
-          referrerPolicy: "no-referrer-when-downgrade",
-        });
-      })
-      .then((res) => {
-        return (res.text());
-      })
-      .then((res) => {
-        console.log(res);
-      })
-      .catch((err) => {
-        bot.telegram.sendMessage(chatId, 'Error ocurred on login', err);
-      });
-  });
+bot.command('clock_in', clockInCommand);
+
+bot.command('clock_out', clockOutCommand);
+
+bot.help((ctx) => {
+  ctx.reply(`Available commands are:
+  * /help
+  * /start
+  * /status
+  * /clock_in
+  * /clock_out
+  * /holidays
+  * /tomorrow_not_work
+  * /today_not_work
+  `);
+});
+
+bot.command('status', (ctx) => {
+  if (!chatId) {
+    ctx.reply('I don\'t know who you are... Try /start command.');
+  } else if (chatId && !clockInTimer && !clockOutTimer) {
+    bot.telegram.sendMessage(chatId, 'I\'m resting. Today\'s my day off.');
+  } else if (chatId && clockInTimer && clockInTimer.nextInvocation()) {
+    console.log(clockInTimer.nextInvocation())
+    bot.telegram.sendMessage(chatId, 'I\'m going to start to work at ' + moment(clockInTimer.nextInvocation()).format('DD/MM/YYYY HH:mm'));
+  } else if (chatId && clockOutTimer && clockOutTimer.nextInvocation()) {
+    bot.telegram.sendMessage(chatId, 'I\'m going to finish work at ' + moment(clockOutTimer.nextInvocation()).format('DD/MM/YYYY HH:mm'));
+  }
 });
 
 /**

@@ -1,15 +1,33 @@
+# Description
+
+This is a Telegram bot which is able to automatically clock-in and clock-out in an hypothetical company presence control system.
+It takes into account holidays, days off, lunch time or schedule cancelation.
+Also it simulate random behaviour between customized limits.
+
 # .env example settings
 
 ```
 BOT_TOKEN=""
+TELEGRAM_USERNAME="username"
 MIN_WORKINGDAY_DURATION = 9.5
 MAX_WORKINGDAY_DURATION = 10
 MIN_START_HOUR = "06:45"
 MAX_START_HOUR = "07:00"
 BASE_URL = "https://domain.com
 LOGIN_URL = "/endpoint0"
-START_WORK_URL = "/endpoint1"
-END_WORK_URL = "/endpoint2"
-USERNAME = "username"
-PASSWORD = "password"
+START_WORK_ENDPOINT = "/endpoint1"
+END_WORK_ENDPOINT = "/endpoint2"
+LOGIN_USERNAME = "xxx"
+LOGIN_PASSWORD = "xxxxxx"
 ```
+
+# Avaible commands
+
+* /help
+* /start
+* /status
+* /clock_in
+* /clock_out
+* /holidays
+* /tomorrow_not_work
+* /today_not_work
