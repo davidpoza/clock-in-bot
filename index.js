@@ -116,6 +116,7 @@ clockInCommand = (ctx) => {
       })
       .then((res) => {
         bot.telegram.sendMessage(chatId, 'I\'ve just clock-in my friend.👍');
+        lastClockIn = moment();
       })
       .catch((err) => {
         bot.telegram.sendMessage(chatId, 'Error ocurred on clock-in: ', err);
@@ -132,6 +133,8 @@ clockOutCommand = (ctx) => {
       })
       .then((res) => {
         bot.telegram.sendMessage(chatId, 'I\'ve just clock-out!!. What such a hard working day👏🏼.');
+        lastClockOut = moment();
+        lastClockIn = undefined;
       })
       .catch((err) => {
         bot.telegram.sendMessage(chatId, 'Error ocurred on clock-out: ', err);
@@ -168,6 +171,8 @@ let globalTimer;
 let clockInTimer;
 let clockOutTimer;
 let chatId;
+let lastClockIn;
+let lastClockOut;
 const minWorkingTimeDuration = process.env.MIN_WORKINGDAY_DURATION*60; //in minutes
 const maxWorkingTimeDuration = process.env.MAX_WORKINGDAY_DURATION*60; //in minutes
 
@@ -202,16 +207,32 @@ bot.help((ctx) => {
 
 bot.command('status', (ctx) => {
   if (!chatId) {
-    ctx.reply('I don\'t know who you are... Try /start command.');
-  } else if (chatId && !clockInTimer && !clockOutTimer) {
+    ctx.reply('Nothing found... Try /start command.');
+  } else if (chatId && lastClockIn) {
+    bot.telegram.sendMessage(chatId, 'I\'m working since ' + lastClockIn.format('DD/MM/YYYY HH:mm'));
+  } else if (chatId && lastClockOut) {
+    bot.telegram.sendMessage(chatId, 'I finished work at ' + lastClockOut.format('DD/MM/YYYY HH:mm'));
+  } else if (chatId && !lastClockIn && !clockInTimer && !clockOutTimer) {
     bot.telegram.sendMessage(chatId, 'I\'m resting. Today\'s my day off.');
   } else if (chatId && clockInTimer && clockInTimer.nextInvocation()) {
-    console.log(clockInTimer.nextInvocation())
     bot.telegram.sendMessage(chatId, 'I\'m going to start to work at ' + moment(clockInTimer.nextInvocation()).format('DD/MM/YYYY HH:mm'));
   } else if (chatId && clockOutTimer && clockOutTimer.nextInvocation()) {
     bot.telegram.sendMessage(chatId, 'I\'m going to finish work at ' + moment(clockOutTimer.nextInvocation()).format('DD/MM/YYYY HH:mm'));
   }
 });
+
+
+bot.command('holidays', (ctx) => {
+  isFromMe(ctx, () => {
+    ctx.reply('Your holdays are:');
+    ctx.reply(holidays.join('\n'));
+    ctx.reply('and:');
+    ctx.reply(daysOff.join('\n'));
+  }, () => {
+    ctx.reply('I don\'t know who you are... I\'ll ignore you.');
+  });
+});
+
 
 /**
  * Example of history update
