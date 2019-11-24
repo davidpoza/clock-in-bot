@@ -4,8 +4,9 @@ const Telegraf = require('telegraf');
 const schedule = require('node-schedule');
 const moment = require('moment');
 const get = require('lodash.get');
+const fetch = require('node-fetch');
 
-isFromMe = (ctx, fn, fn_anonymous) => {
+isFromMe = (ctx, fn, fn_anonymous = () => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
   get(ctx, 'update.message.from.username') === 'davidpoza' ? fn() : fn_anonymous && fn_anonymous();
 };
 
@@ -34,6 +35,11 @@ randomHour = (min, max) => {
 
 randomNumber = (min, max) => {
   return (Math.floor(Math.random() * (max - min)) + min);
+}
+
+parseCookie = (str) => {
+  const regex = /(JSESSIONID=[a-zA-Z0-9]*); Path=\//;
+  return (regex.exec(str)[1]);
 }
 
 initJobs = () => {
@@ -104,11 +110,86 @@ bot.command('init_timer', (ctx) => {
       ctx.reply('Ya ha pasado un minuto');
     });
     ctx.reply('Te avisaré en un minuto');
-  }, () => {
-    ctx.reply('No te conozco');
   });
-
 });
+
+bot.command('login', (ctx) => {
+  isFromMe(ctx, () => {
+    fetch(process.env.BASE_URL+process.env.LOGIN_URL, {
+      method: 'POST',
+      credentials: 'include',
+      mode: "cors",
+      headers: {
+        Accept: '*/*',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Host: 'gestionitt.grupo-arelance.com',
+        Origin: 'http://gestionitt.grupo-arelance.com',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        Referer: 'http://gestionitt.grupo-arelance.com/',
+      },
+      referrer: "http://gestionitt.grupo-arelance.com/",
+      body: JSON.stringify({
+        usuario: process.env.USERNAME,
+        password: process.env.PASSWORD,
+      }),
+    })
+      .then((res) => {
+        const jsessionid = parseCookie(res.headers.raw()['set-cookie']);
+        console.log(jsessionid)
+        return fetch(process.env.BASE_URL+process.env.START_WORK_URL, {
+          method: 'POST',
+          mode: "cors",
+          credentials: 'include',
+          headers: {
+            Accept: '*/*',
+            'Content-Length': '0',
+            Cookie: jsessionid,
+            //Cookie: 'JSESSIONID=B500EF35EC941D1AF82D29412290E5F0',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Accept-Language': 'es,en;q=0.9,en-GB;q=0.8,sr;q=0.7',
+            Host: 'gestionitt.grupo-arelance.com',
+            Origin: 'http://gestionitt.grupo-arelance.com',
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
+            'X-Requested-With': 'XMLHttpRequest',
+            Referer: 'http://gestionitt.grupo-arelance.com/',
+          },
+          referrer: "http://gestionitt.grupo-arelance.com/",
+          referrerPolicy: "no-referrer-when-downgrade",
+        });
+      })
+      .then((res) => {
+        return (res.text());
+      })
+      .then((res) => {
+        console.log(res);
+      })
+      .catch((err) => {
+        bot.telegram.sendMessage(chatId, 'Error ocurred on login', err);
+      });
+  });
+});
+
+/**
+ * Example of history update
+ *
+ * fetch(process.env.BASE_URL+'/GestionITT/EmpleadoAction_updateHistoricoControlPresencia.action', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            params: [
+              { idControlPresencia: "xxxxx", horaInicio: "2020-11-21T06:48:00.000Z", horaFin: "2020-11-21T17:15:00.000Z" },
+              { idControlPresencia: "xxxxx", horaInicio: "2020-11-20T06:48:00.000Z", horaFin: "2020-11-20T17:15:00.000Z" },
+              { idControlPresencia: "xxxxx", horaInicio: "2020-11-19T06:48:00.000Z", horaFin: "2020-11-19T17:15:00.000Z" },
+            ]
+          }),
+        });
+ */
+
 
 bot.startPolling();
 bot.use(/*Telegraf.log()*/);
