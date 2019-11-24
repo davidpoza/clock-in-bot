@@ -7,18 +7,18 @@ Also it simulate random behaviour between customized limits.
 # .env example settings
 
 ```
-BOT_TOKEN=""
-TELEGRAM_USERNAME="username"
-MIN_WORKINGDAY_DURATION = 9.5
-MAX_WORKINGDAY_DURATION = 10
-MIN_START_HOUR = "06:45"
-MAX_START_HOUR = "07:00"
-BASE_URL = "https://domain.com
-LOGIN_URL = "/endpoint0"
-START_WORK_ENDPOINT = "/endpoint1"
-END_WORK_ENDPOINT = "/endpoint2"
-LOGIN_USERNAME = "xxx"
-LOGIN_PASSWORD = "xxxxxx"
+BOT_TOKEN=xxxxxxxxxxxxxxxxxxxx
+TELEGRAM_USERNAME=username
+MIN_WORKINGDAY_DURATION=9.5
+MAX_WORKINGDAY_DURATION=10
+MIN_START_HOUR=06:45
+MAX_START_HOUR=07:00
+BASE_URL=https://domain.com
+LOGIN_URL=/endpoint0
+START_WORK_ENDPOINT=/endpoint1
+END_WORK_ENDPOINT=/endpoint2
+LOGIN_USERNAME=xxx
+LOGIN_PASSWORD=xxxxxx
 ```
 
 # Avaible commands

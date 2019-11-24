@@ -1,3 +1,3 @@
 #!/bin/bash
-sleep 15
+sleep 1
 npm start

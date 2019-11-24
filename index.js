@@ -1,22 +1,24 @@
 
 require('dotenv').config();
-const Telegraf = require('telegraf');
-const schedule = require('node-schedule');
-const moment = require('moment');
-const get = require('lodash.get');
-const fetch = require('node-fetch');
+const Telegraf=require('telegraf');
+const schedule=require('node-schedule');
+const moment=require('moment');
+const get=require('lodash.get');
+const fetch=require('node-fetch');
 
-isFromMe = (ctx, fn, fn_anonymous = () => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
+console.log(process.env);
+
+isFromMe=(ctx, fn, fn_anonymous=() => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
   get(ctx, 'update.message.from.username') === process.env.TELEGRAM_USERNAME ? fn() : fn_anonymous && fn_anonymous();
 };
 
-getChatId = (ctx) => {
+getChatId=(ctx) => {
   return get(ctx, 'update.message.chat.id');
 }
 
-isWorkday = (date, daysOff, holidays) => {
-  let dow = moment(date).isoWeekday(); //1:lunes, 7:domingo
-  let formattedDate = moment(date).format('DD/MM/YYYY');
+isWorkday=(date, daysOff, holidays) => {
+  let dow=moment(date).isoWeekday(); //1:lunes, 7:domingo
+  let formattedDate=moment(date).format('DD/MM/YYYY');
   if (dow === 6 || dow === 7) {
     return false;
   }
@@ -26,46 +28,46 @@ isWorkday = (date, daysOff, holidays) => {
 }
 
 /* returns hour in format HH:MM between min and max */
-randomHour = (min, max) => {
-  let min_timestamp = moment(`${min} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
-  let max_timestamp = moment(`${max} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
-  let result_timestamp = Math.floor(Math.random() * (max_timestamp - min_timestamp)) + min_timestamp;
+randomHour=(min, max) => {
+  let min_timestamp=moment(`${min} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
+  let max_timestamp=moment(`${max} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
+  let result_timestamp=Math.floor(Math.random() * (max_timestamp - min_timestamp)) + min_timestamp;
   return (moment(new Date(result_timestamp*1000)).format('HH:mm'));
 }
 
-randomNumber = (min, max) => {
+randomNumber=(min, max) => {
   return (Math.floor(Math.random() * (max - min)) + min);
 }
 
-parseCookie = (str) => {
-  const regex = /(JSESSIONID=[a-zA-Z0-9]*); Path=\//;
+parseCookie=(str) => {
+  const regex=/(JSESSIONID=[a-zA-Z0-9]*); Path=\//;
   return (regex.exec(str)[1]);
 }
 
-getDomain = (str) => {
-  const regex = /https?:\/\/(.*)$/;
+getDomain=(str) => {
+  const regex=/https?:\/\/(.*)$/;
   return (regex.exec(str)[1]);
 }
 
-initJobs = (ctx) => {
-  globalTimer = schedule.scheduleJob('0 17 18 * * *', () => {
+initJobs=(ctx) => {
+  globalTimer=schedule.scheduleJob('0 17 18 * * *', () => {
     if (!isWorkday(moment(), daysOff, holidays)) {
-      const clockInHour = moment(`18:18 ${moment().format('DD/MM/YYYY')}`, 'HH:mm DD/MM/YYYY');
-      const workingTimeDurationInMins = randomNumber(minWorkingTimeDuration, maxWorkingTimeDuration);
-      const clockOutHour = moment(clockInHour).add(workingTimeDurationInMins, 'minutes');
+      const clockInHour=moment(`18:18 ${moment().format('DD/MM/YYYY')}`, 'HH:mm DD/MM/YYYY');
+      const workingTimeDurationInMins=randomNumber(minWorkingTimeDuration, maxWorkingTimeDuration);
+      const clockOutHour=moment(clockInHour).add(workingTimeDurationInMins, 'minutes');
       bot.telegram.sendMessage(chatId, `I\`m going to start work at: ${clockInHour.format("HH:mm")}`);
       bot.telegram.sendMessage(chatId, `I\`m going to finish work at: ${clockOutHour.format("HH:mm")}`);
-      clockInTimer = schedule.scheduleJob(clockInHour.toDate(), () => {
+      clockInTimer=schedule.scheduleJob(clockInHour.toDate(), () => {
         clockInCommand(ctx);
       });
-      clockOutTimer = schedule.scheduleJob(clockOutHour.toDate(), () => {
+      clockOutTimer=schedule.scheduleJob(clockOutHour.toDate(), () => {
         clockOutCommand(ctx);
       });
     }
   });
 };
 
-login = () => {
+login=() => {
   return fetch(process.env.BASE_URL+process.env.LOGIN_URL, {
     method: 'POST',
     credentials: 'include',
@@ -86,7 +88,7 @@ login = () => {
   })
 }
 
-clockInOut = (cookie, endpoint) => {
+clockInOut=(cookie, endpoint) => {
   return fetch(process.env.BASE_URL+endpoint, {
     method: 'POST',
     mode: "cors",
@@ -107,16 +109,16 @@ clockInOut = (cookie, endpoint) => {
   });
 }
 
-clockInCommand = (ctx) => {
+clockInCommand=(ctx) => {
   isFromMe(ctx, () => {
     login()
       .then((res) => {
-        const jsessionid = parseCookie(res.headers.raw()['set-cookie']);
+        const jsessionid=parseCookie(res.headers.raw()['set-cookie']);
         return clockInOut(jsessionid, process.env.START_WORK_ENDPOINT);
       })
       .then((res) => {
         bot.telegram.sendMessage(chatId, 'I\'ve just clock-in my friend.👍');
-        lastClockIn = moment();
+        lastClockIn=moment();
       })
       .catch((err) => {
         bot.telegram.sendMessage(chatId, 'Error ocurred on clock-in: ', err);
@@ -124,17 +126,17 @@ clockInCommand = (ctx) => {
   });
 }
 
-clockOutCommand = (ctx) => {
+clockOutCommand=(ctx) => {
   isFromMe(ctx, () => {
     login()
       .then((res) => {
-        const jsessionid = parseCookie(res.headers.raw()['set-cookie']);
+        const jsessionid=parseCookie(res.headers.raw()['set-cookie']);
         return clockInOut(jsessionid, process.env.END_WORK_ENDPOINT);
       })
       .then((res) => {
         bot.telegram.sendMessage(chatId, 'I\'ve just clock-out!!. What such a hard working day👏🏼.');
-        lastClockOut = moment();
-        lastClockIn = undefined;
+        lastClockOut=moment();
+        lastClockIn=undefined;
       })
       .catch((err) => {
         bot.telegram.sendMessage(chatId, 'Error ocurred on clock-out: ', err);
@@ -142,15 +144,15 @@ clockOutCommand = (ctx) => {
   });
 }
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
-let daysOff = [
+const bot=new Telegraf(process.env.BOT_TOKEN);
+let daysOff=[
   '26/12/2019',
   '27/12/2019',
   '30/12/2019',
   '02/01/2020',
   '03/01/2020',
 ];
-let holidays = [
+let holidays=[
   '06/12/2019',
   '09/12/2019',
   '25/12/2019',
@@ -173,15 +175,15 @@ let clockOutTimer;
 let chatId;
 let lastClockIn;
 let lastClockOut;
-const minWorkingTimeDuration = process.env.MIN_WORKINGDAY_DURATION*60; //in minutes
-const maxWorkingTimeDuration = process.env.MAX_WORKINGDAY_DURATION*60; //in minutes
+const minWorkingTimeDuration=process.env.MIN_WORKINGDAY_DURATION*60; //in minutes
+const maxWorkingTimeDuration=process.env.MAX_WORKINGDAY_DURATION*60; //in minutes
 
 bot.start((ctx) => {
   isFromMe(ctx, () => {
     ctx.reply(`Welcome ${process.env.TELEGRAM_USERNAME}!`);
     ctx.reply('Bot initialized!');
     ctx.reply('Setting jobs...');
-    chatId = getChatId(ctx);
+    chatId=getChatId(ctx);
     initJobs(ctx);
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
