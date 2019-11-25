@@ -1,146 +1,11 @@
 
 require('dotenv').config();
-const Telegraf=require('telegraf');
-const schedule=require('node-schedule');
+const Telegraf = require('telegraf');
 const moment = require('moment-timezone');
-const get=require('lodash.get');
-const fetch=require('node-fetch');
+const commands = require('./commands');
+const functions = require('./functions');
 
-isFromMe=(ctx, fn, fn_anonymous=() => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
-  get(ctx, 'update.message.from.username') === process.env.TELEGRAM_USERNAME ? fn() : fn_anonymous && fn_anonymous();
-};
 
-getChatId=(ctx) => {
-  return get(ctx, 'update.message.chat.id');
-}
-
-isWorkday=(date, daysOff, holidays) => {
-  let dow=moment.tz(date, process.env.MOMENT_TZ).isoWeekday(); //1:lunes, 7:domingo
-  let formattedDate=moment.tz(date, process.env.MOMENT_TZ).format('DD/MM/YYYY');
-  if (dow === 6 || dow === 7) {
-    return false;
-  }
-  if (daysOff.includes(formattedDate) || holidays.includes(formattedDate))
-    return false;
-  return true;
-}
-
-/* returns hour in format HH:MM between min and max */
-randomHour=(min, max) => {
-  let min_timestamp=moment(`${min} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
-  let max_timestamp=moment(`${max} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
-  let result_timestamp=Math.floor(Math.random() * (max_timestamp - min_timestamp)) + min_timestamp;
-  return (moment(new Date(result_timestamp*1000)).format('HH:mm'));
-}
-
-randomNumber=(min, max) => {
-  return (Math.floor(Math.random() * (max - min)) + min);
-}
-
-parseCookie=(str) => {
-  const regex=/(JSESSIONID=[a-zA-Z0-9]*); Path=\//;
-  return (regex.exec(str)[1]);
-}
-
-getDomain=(str) => {
-  const regex=/https?:\/\/(.*)$/;
-  return (regex.exec(str)[1]);
-}
-
-initJobs=(ctx) => {
-  globalTimer=schedule.scheduleJob('0 0 0 * * *', () => {
-    if (isWorkday(moment.tz(process.env.MOMENT_TZ), daysOff, holidays)) {
-      const clockInHour=moment.tz(`${randomHour(process.env.MIN_START_HOUR, process.env.MAX_START_HOUR)} ${moment.tz(process.env.MOMENT_TZ, process.env.MOMENT_TZ).format('DD/MM/YYYY')}`, 'HH:mm DD/MM/YYYY');
-      const workingTimeDurationInMins=randomNumber(minWorkingTimeDuration, maxWorkingTimeDuration);
-      const clockOutHour=moment.tz(clockInHour, process.env.MOMENT_TZ).add(workingTimeDurationInMins, 'minutes');
-      bot.telegram.sendMessage(chatId, `I\'m going to start work at: ${clockInHour.format("HH:mm")}`);
-      bot.telegram.sendMessage(chatId, `I\'m going to finish work at: ${clockOutHour.format("HH:mm")}`);
-      clockInTimer=schedule.scheduleJob(clockInHour.toDate(), () => {
-        clockInCommand(ctx);
-      });
-      clockOutTimer=schedule.scheduleJob(clockOutHour.toDate(), () => {
-        clockOutCommand(ctx);
-      });
-    }
-  });
-};
-
-login=() => {
-  return fetch(process.env.BASE_URL+process.env.LOGIN_URL, {
-    method: 'POST',
-    credentials: 'include',
-    mode: "cors",
-    headers: {
-      'Accept-Encoding': 'gzip, deflate',
-      'Connection': 'keep-alive',
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
-      'X-Requested-With': 'XMLHttpRequest',
-      Accept: '*/*',
-      Host: getDomain(process.env.BASE_URL),
-      Origin: process.env.BASE_URL,
-    },
-    referrer: process.env.BASE_URL + '/',
-    referrerPolicy: 'no-referrer-when-downgrade',
-    body: `numIntentos=&usuario=${process.env.LOGIN_USERNAME}&password=${process.env.LOGIN_PASSWORD}&g-recaptcha-response=`,
-  })
-}
-
-clockInOut=(cookie, endpoint) => {
-  return fetch(process.env.BASE_URL+endpoint, {
-    method: 'POST',
-    mode: "cors",
-    credentials: 'include',
-    headers: {
-      'Accept-Encoding': 'gzip, deflate',
-      'Accept-Language': 'es,en;q=0.9,en-GB;q=0.8,sr;q=0.7',
-      'Connection': 'keep-alive',
-      'Content-Length': '0',
-      'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
-      'X-Requested-With': 'XMLHttpRequest',
-      Accept: '*/*',
-      Cookie: cookie,
-      Host: getDomain(process.env.BASE_URL),
-      Origin: process.env.BASE_URL,
-    },
-    referrer: process.env.BASE_URL + '/',
-  });
-}
-
-clockInCommand=(ctx) => {
-  isFromMe(ctx, () => {
-    login()
-      .then((res) => {
-        const jsessionid=parseCookie(res.headers.raw()['set-cookie']);
-        return clockInOut(jsessionid, process.env.START_WORK_ENDPOINT);
-      })
-      .then((res) => {
-        bot.telegram.sendMessage(chatId, 'I\'ve just clock-in my friend.👍');
-        lastClockIn=moment.tz(process.env.MOMENT_TZ);
-      })
-      .catch((err) => {
-        bot.telegram.sendMessage(chatId, 'Error ocurred on clock-in: ', err);
-      });
-  });
-}
-
-clockOutCommand=(ctx) => {
-  isFromMe(ctx, () => {
-    login()
-      .then((res) => {
-        const jsessionid=parseCookie(res.headers.raw()['set-cookie']);
-        return clockInOut(jsessionid, process.env.END_WORK_ENDPOINT);
-      })
-      .then((res) => {
-        bot.telegram.sendMessage(chatId, 'I\'ve just clock-out!!. What such a hard working day👏🏼.');
-        lastClockOut=moment.tz(process.env.MOMENT_TZ);
-        lastClockIn=undefined;
-      })
-      .catch((err) => {
-        bot.telegram.sendMessage(chatId, 'Error ocurred on clock-out: ', err);
-      });
-  });
-}
 
 const bot=new Telegraf(process.env.BOT_TOKEN);
 let daysOff=[
@@ -177,20 +42,24 @@ const minWorkingTimeDuration=process.env.MIN_WORKINGDAY_DURATION*60; //in minute
 const maxWorkingTimeDuration=process.env.MAX_WORKINGDAY_DURATION*60; //in minutes
 
 bot.start((ctx) => {
-  isFromMe(ctx, () => {
+  functions.isFromMe(ctx, () => {
     ctx.reply(`Welcome ${process.env.TELEGRAM_USERNAME}!`);
     ctx.reply('Bot initialized!');
     ctx.reply('Setting jobs...');
-    chatId=getChatId(ctx);
-    initJobs(ctx);
+    chatId=functions.getChatId(ctx);
+    commands.initJobsCommand(ctx);
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });
 });
 
-bot.command('clock_in', clockInCommand);
+bot.command('clock_in', (ctx) => {
+  commands.clockInCommand(ctx, bot);
+});
 
-bot.command('clock_out', clockOutCommand);
+bot.command('clock_out', (ctx) => {
+  commands.clockOutCommand(ctx, bot);
+});
 
 bot.help((ctx) => {
   ctx.reply(`Available commands are:
@@ -208,22 +77,24 @@ bot.help((ctx) => {
 bot.command('status', (ctx) => {
   if (!chatId) {
     ctx.reply('Nothing found... Try /start command.');
-  } else if (chatId && lastClockIn) {
-    bot.telegram.sendMessage(chatId, 'I\'m working since ' + lastClockIn.format('DD/MM/YYYY HH:mm'));
-  } else if (chatId && lastClockOut) {
-    bot.telegram.sendMessage(chatId, 'I finished work at ' + lastClockOut.format('DD/MM/YYYY HH:mm'));
-  } else if (chatId && !lastClockIn && !clockInTimer && !clockOutTimer) {
-    bot.telegram.sendMessage(chatId, 'I\'m resting. Today\'s my day off.');
-  } else if (chatId && clockInTimer && clockInTimer.nextInvocation()) {
-    bot.telegram.sendMessage(chatId, 'I\'m going to start to work at ' + moment.tz(clockInTimer.nextInvocation(), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm'));
-  } else if (chatId && clockOutTimer && clockOutTimer.nextInvocation()) {
-    bot.telegram.sendMessage(chatId, 'I\'m going to finish work at ' + moment.tz(clockOutTimer.nextInvocation(), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm'));
+  } else  {
+    if (lastClockIn && !lastClockOut) {
+      bot.telegram.sendMessage(chatId, 'I\'m working since ' + lastClockIn.format('DD/MM/YYYY HH:mm'));
+    } else if (!lastClockIn && lastClockOut) {
+      bot.telegram.sendMessage(chatId, 'I finished work at ' + lastClockOut.format('DD/MM/YYYY HH:mm'));
+    } else if (!lastClockIn && !clockInTimer && !clockOutTimer) {
+      bot.telegram.sendMessage(chatId, 'I\'m resting. Today\'s my day off.');
+    } else if (clockInTimer && clockInTimer.nextInvocation()) {
+      bot.telegram.sendMessage(chatId, 'I\'m going to start to work at ' + moment.tz(clockInTimer.nextInvocation(), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm'));
+    } else if (clockOutTimer && clockOutTimer.nextInvocation()) {
+      bot.telegram.sendMessage(chatId, 'I\'m going to finish work at ' + moment.tz(clockOutTimer.nextInvocation(), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm'));
+    }
   }
 });
 
 
 bot.command('holidays', (ctx) => {
-  isFromMe(ctx, () => {
+  functions.isFromMe(ctx, () => {
     ctx.reply('Your holdays are:');
     ctx.reply(holidays.join('\n'));
     ctx.reply('and:');
@@ -232,27 +103,6 @@ bot.command('holidays', (ctx) => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });
 });
-
-
-/**
- * Example of history update
- *
- * fetch(process.env.BASE_URL+'/GestionITT/EmpleadoAction_updateHistoricoControlPresencia.action', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            params: [
-              { idControlPresencia: "xxxxx", horaInicio: "2020-11-21T06:48:00.000Z", horaFin: "2020-11-21T17:15:00.000Z" },
-              { idControlPresencia: "xxxxx", horaInicio: "2020-11-20T06:48:00.000Z", horaFin: "2020-11-20T17:15:00.000Z" },
-              { idControlPresencia: "xxxxx", horaInicio: "2020-11-19T06:48:00.000Z", horaFin: "2020-11-19T17:15:00.000Z" },
-            ]
-          }),
-        });
- */
-
 
 bot.startPolling();
 bot.use(/*Telegraf.log()*/);
