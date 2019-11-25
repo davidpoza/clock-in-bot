@@ -2,7 +2,7 @@
 require('dotenv').config();
 const Telegraf=require('telegraf');
 const schedule=require('node-schedule');
-const moment=require('moment');
+const moment = require('moment-timezone');
 const get=require('lodash.get');
 const fetch=require('node-fetch');
 
@@ -15,8 +15,8 @@ getChatId=(ctx) => {
 }
 
 isWorkday=(date, daysOff, holidays) => {
-  let dow=moment(date).isoWeekday(); //1:lunes, 7:domingo
-  let formattedDate=moment(date).format('DD/MM/YYYY');
+  let dow=moment.tz(date, process.env.MOMENT_TZ).isoWeekday(); //1:lunes, 7:domingo
+  let formattedDate=moment.tz(date, process.env.MOMENT_TZ).format('DD/MM/YYYY');
   if (dow === 6 || dow === 7) {
     return false;
   }
@@ -49,10 +49,10 @@ getDomain=(str) => {
 
 initJobs=(ctx) => {
   globalTimer=schedule.scheduleJob('0 0 0 * * *', () => {
-    if (isWorkday(moment(), daysOff, holidays)) {
-      const clockInHour=moment(`${randomHour(process.env.MIN_START_HOUR, process.env.MAX_START_HOUR)} ${moment().format('DD/MM/YYYY')}`, 'HH:mm DD/MM/YYYY');
+    if (isWorkday(moment.tz(process.env.MOMENT_TZ), daysOff, holidays)) {
+      const clockInHour=moment.tz(`${randomHour(process.env.MIN_START_HOUR, process.env.MAX_START_HOUR)} ${moment.tz(process.env.MOMENT_TZ, process.env.MOMENT_TZ).format('DD/MM/YYYY')}`, 'HH:mm DD/MM/YYYY');
       const workingTimeDurationInMins=randomNumber(minWorkingTimeDuration, maxWorkingTimeDuration);
-      const clockOutHour=moment(clockInHour).add(workingTimeDurationInMins, 'minutes');
+      const clockOutHour=moment.tz(clockInHour, process.env.MOMENT_TZ).add(workingTimeDurationInMins, 'minutes');
       bot.telegram.sendMessage(chatId, `I\'m going to start work at: ${clockInHour.format("HH:mm")}`);
       bot.telegram.sendMessage(chatId, `I\'m going to finish work at: ${clockOutHour.format("HH:mm")}`);
       clockInTimer=schedule.scheduleJob(clockInHour.toDate(), () => {
@@ -116,7 +116,7 @@ clockInCommand=(ctx) => {
       })
       .then((res) => {
         bot.telegram.sendMessage(chatId, 'I\'ve just clock-in my friend.👍');
-        lastClockIn=moment();
+        lastClockIn=moment.tz(process.env.MOMENT_TZ);
       })
       .catch((err) => {
         bot.telegram.sendMessage(chatId, 'Error ocurred on clock-in: ', err);
@@ -133,7 +133,7 @@ clockOutCommand=(ctx) => {
       })
       .then((res) => {
         bot.telegram.sendMessage(chatId, 'I\'ve just clock-out!!. What such a hard working day👏🏼.');
-        lastClockOut=moment();
+        lastClockOut=moment.tz(process.env.MOMENT_TZ);
         lastClockIn=undefined;
       })
       .catch((err) => {
@@ -215,9 +215,9 @@ bot.command('status', (ctx) => {
   } else if (chatId && !lastClockIn && !clockInTimer && !clockOutTimer) {
     bot.telegram.sendMessage(chatId, 'I\'m resting. Today\'s my day off.');
   } else if (chatId && clockInTimer && clockInTimer.nextInvocation()) {
-    bot.telegram.sendMessage(chatId, 'I\'m going to start to work at ' + moment(clockInTimer.nextInvocation()).format('DD/MM/YYYY HH:mm'));
+    bot.telegram.sendMessage(chatId, 'I\'m going to start to work at ' + moment.tz(clockInTimer.nextInvocation(), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm'));
   } else if (chatId && clockOutTimer && clockOutTimer.nextInvocation()) {
-    bot.telegram.sendMessage(chatId, 'I\'m going to finish work at ' + moment(clockOutTimer.nextInvocation()).format('DD/MM/YYYY HH:mm'));
+    bot.telegram.sendMessage(chatId, 'I\'m going to finish work at ' + moment.tz(clockOutTimer.nextInvocation(), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm'));
   }
 });
 
