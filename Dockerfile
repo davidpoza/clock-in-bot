@@ -5,6 +5,8 @@ WORKDIR /usr/src/app
 
 COPY shell.sh ./
 COPY index.js ./
+COPY commands.js ./
+COPY functions.js ./
 COPY .env ./
 COPY package.json ./
 RUN npm install --only=production
