@@ -50,7 +50,7 @@ getDomain=(str) => {
 initJobs=(ctx) => {
   globalTimer=schedule.scheduleJob('0 0 0 * * *', () => {
     if (isWorkday(moment(), daysOff, holidays)) {
-      const clockInHour=moment(`${randomHour(process.env.MIN_START_HOUR, process.env.MAX_START_HOUR)}${moment().format('DD/MM/YYYY')}`, 'HH:mm DD/MM/YYYY');
+      const clockInHour=moment(`${randomHour(process.env.MIN_START_HOUR, process.env.MAX_START_HOUR)} ${moment().format('DD/MM/YYYY')}`, 'HH:mm DD/MM/YYYY');
       const workingTimeDurationInMins=randomNumber(minWorkingTimeDuration, maxWorkingTimeDuration);
       const clockOutHour=moment(clockInHour).add(workingTimeDurationInMins, 'minutes');
       bot.telegram.sendMessage(chatId, `I\`m going to start work at: ${clockInHour.format("HH:mm")}`);
