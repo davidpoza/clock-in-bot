@@ -53,8 +53,8 @@ initJobs=(ctx) => {
       const clockInHour=moment(`${randomHour(process.env.MIN_START_HOUR, process.env.MAX_START_HOUR)} ${moment().format('DD/MM/YYYY')}`, 'HH:mm DD/MM/YYYY');
       const workingTimeDurationInMins=randomNumber(minWorkingTimeDuration, maxWorkingTimeDuration);
       const clockOutHour=moment(clockInHour).add(workingTimeDurationInMins, 'minutes');
-      bot.telegram.sendMessage(chatId, `I\`m going to start work at: ${clockInHour.format("HH:mm")}`);
-      bot.telegram.sendMessage(chatId, `I\`m going to finish work at: ${clockOutHour.format("HH:mm")}`);
+      bot.telegram.sendMessage(chatId, `I\'m going to start work at: ${clockInHour.format("HH:mm")}`);
+      bot.telegram.sendMessage(chatId, `I\'m going to finish work at: ${clockOutHour.format("HH:mm")}`);
       clockInTimer=schedule.scheduleJob(clockInHour.toDate(), () => {
         clockInCommand(ctx);
       });
