@@ -2,7 +2,7 @@
 
 This is a Telegram bot which is able to automatically clock-in and clock-out in an hypothetical company presence control system.
 It takes into account holidays, days off, lunch time or schedule cancelation.
-Also it simulate random behaviour between customized limits.
+Also it simulates random behaviour between customized limits.
 
 # .env example settings
 
@@ -19,6 +19,7 @@ START_WORK_ENDPOINT=/endpoint1
 END_WORK_ENDPOINT=/endpoint2
 LOGIN_USERNAME=xxx
 LOGIN_PASSWORD=xxxxxx
+MOMENT_TZ=Europe/Madrid
 ```
 
 # Avaible commands
