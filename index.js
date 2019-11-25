@@ -2,8 +2,8 @@
 require('dotenv').config();
 const Telegraf = require('telegraf');
 const moment = require('moment-timezone');
-const commands = require('./commands');
-const functions = require('./functions');
+const commands = require('./commands.js');
+const functions = require('./functions.js');
 
 
 

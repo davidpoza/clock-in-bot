@@ -1,6 +1,6 @@
 const schedule = require('node-schedule');
 const moment = require('moment-timezone');
-const functions = require('./functions');
+const functions = require('./functions.js');
 
 
 
