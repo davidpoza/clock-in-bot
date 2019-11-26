@@ -2,7 +2,6 @@ require('dotenv').config();
 const moment = require('moment-timezone');
 const get = require('lodash.get');
 const fetch = require('node-fetch');
-const schedule = require('node-schedule');
 const commands = require('./commands.js');
 
 isFromMe = (ctx, fn, fn_anonymous=() => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
@@ -88,7 +87,7 @@ clockInOutRequest = (cookie, endpoint) => {
   });
 }
 
-setJobs = (ctx, bot, clockInTimer, clockOutTimer, daysOff, holidays) => {
+setJobs = (ctx, bot, schedule, clockInTimer, clockOutTimer, daysOff, holidays) => {
   const chatId = getChatId(ctx);
   if (isWorkday(moment.tz(process.env.MOMENT_TZ), daysOff, holidays)) {
     const workingTimeDurationInMins = randomNumber(
@@ -104,6 +103,7 @@ setJobs = (ctx, bot, clockInTimer, clockOutTimer, daysOff, holidays) => {
     clockInTimer = Object.assign(clockInTimer, schedule.scheduleJob(clockInHour.toDate(), () => {
       commands.clockInCommand(ctx, bot);
     }));
+    console.log(schedule)
     bot.telegram.sendMessage(chatId, `I\'m going to finish work at: ${clockOutHour.format("HH:mm")}`);
     clockOutTimer = Object.assign(clockOutTimer, schedule.scheduleJob(clockOutHour.toDate(), () => {
       commands.clockOutCommand(ctx, bot);

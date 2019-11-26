@@ -1,10 +1,9 @@
 
 require('dotenv').config();
 const Telegraf = require('telegraf');
-const moment = require('moment-timezone');
+const schedule = require('node-schedule');
 const commands = require('./commands.js');
 const functions = require('./functions.js');
-
 
 
 const bot=new Telegraf(process.env.BOT_TOKEN);
@@ -36,8 +35,6 @@ let globalTimer = {};
 let clockInTimer = {};
 let clockOutTimer = {};
 let chatId;
-let lastClockIn;
-let lastClockOut;
 
 bot.start((ctx) => {
   functions.isFromMe(ctx, () => {
@@ -47,7 +44,7 @@ bot.start((ctx) => {
     } else {
       ctx.reply(`You are ${process.env.TELEGRAM_USERNAME}... I already know it....`);
     }
-    commands.initJobsCommand(ctx, bot, globalTimer, clockInTimer, clockOutTimer, daysOff, holidays);
+    commands.initJobsCommand(ctx, bot, schedule, globalTimer, clockInTimer, clockOutTimer, daysOff, holidays);
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });
@@ -75,21 +72,7 @@ bot.help((ctx) => {
 });
 
 bot.command('status', (ctx) => {
-  if (!chatId) {
-    ctx.reply('Nothing found... Try /start command.');
-  } else  {
-    if (lastClockIn && !lastClockOut) {
-      bot.telegram.sendMessage(chatId, 'I\'m working since ' + lastClockIn.format('DD/MM/YYYY HH:mm'));
-    } else if (!lastClockIn && lastClockOut) {
-      bot.telegram.sendMessage(chatId, 'I finished work at ' + lastClockOut.format('DD/MM/YYYY HH:mm'));
-    } else if (!lastClockIn && !clockInTimer && !clockOutTimer) {
-      bot.telegram.sendMessage(chatId, 'I\'m resting. Today\'s my day off.');
-    } else if (clockInTimer && clockInTimer.nextInvocation()) {
-      bot.telegram.sendMessage(chatId, 'I\'m going to start to work at ' + moment.tz(clockInTimer.nextInvocation(), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm'));
-    } else if (clockOutTimer && clockOutTimer.nextInvocation()) {
-      bot.telegram.sendMessage(chatId, 'I\'m going to finish work at ' + moment.tz(clockOutTimer.nextInvocation(), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm'));
-    }
-  }
+  commands.statusCommand(ctx, schedule, clockInTimer, clockOutTimer, daysOff, holidays);
 });
 
 bot.command('holidays', (ctx) => {
