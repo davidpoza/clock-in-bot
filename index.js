@@ -93,14 +93,7 @@ bot.command('status', (ctx) => {
 });
 
 bot.command('holidays', (ctx) => {
-  functions.isFromMe(ctx, () => {
-    ctx.reply('Your holdays are:');
-    ctx.reply(holidays.join('\n'));
-    ctx.reply('and:');
-    ctx.reply(daysOff.join('\n'));
-  }, () => {
-    ctx.reply('I don\'t know who you are... I\'ll ignore you.');
-  });
+  commands.holidaysCommand(ctx, holidays, daysOff);
 });
 
 bot.startPolling();
