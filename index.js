@@ -47,7 +47,7 @@ bot.start((ctx) => {
     ctx.reply('Bot initialized!');
     ctx.reply('Setting jobs...');
     chatId=functions.getChatId(ctx);
-    commands.initJobsCommand(ctx);
+    commands.initJobsCommand(ctx, daysOff, holidays);
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });

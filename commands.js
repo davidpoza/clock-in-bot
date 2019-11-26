@@ -4,7 +4,7 @@ const functions = require('./functions.js');
 
 
 
-module.exports.initJobsCommand=(ctx, bot) => {
+module.exports.initJobsCommand=(ctx, bot, daysOff, holidays) => {
   const chatId = functions.getChatId(ctx);
   globalTimer=schedule.scheduleJob('0 0 0 * * *', () => {
     if (isWorkday(moment.tz(process.env.MOMENT_TZ), daysOff, holidays)) {
