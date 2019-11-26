@@ -32,9 +32,9 @@ let holidays=[
   '08/12/2020',
   '25/12/2020',
 ];
-let globalTimer;
-let clockInTimer;
-let clockOutTimer;
+let globalTimer = {};
+let clockInTimer = {};
+let clockOutTimer = {};
 let chatId;
 let lastClockIn;
 let lastClockOut;
@@ -43,11 +43,11 @@ bot.start((ctx) => {
   functions.isFromMe(ctx, () => {
     if (!chatId) {
       ctx.reply(`Welcome ${process.env.TELEGRAM_USERNAME}!`);
-      chatId = functions.getChatId(ctx);
+      chatId = functions.getChatId();
     } else {
       ctx.reply(`You are ${process.env.TELEGRAM_USERNAME}... I already know it....`);
     }
-    commands.initJobsCommand(ctx, daysOff, holidays);
+    commands.initJobsCommand(ctx, bot, globalTimer, clockInTimer, clockOutTimer, daysOff, holidays);
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });
@@ -91,7 +91,6 @@ bot.command('status', (ctx) => {
     }
   }
 });
-
 
 bot.command('holidays', (ctx) => {
   functions.isFromMe(ctx, () => {

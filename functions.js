@@ -2,6 +2,8 @@ require('dotenv').config();
 const moment = require('moment-timezone');
 const get = require('lodash.get');
 const fetch = require('node-fetch');
+const schedule = require('node-schedule');
+const commands = require('./commands.js');
 
 isFromMe = (ctx, fn, fn_anonymous=() => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
   get(ctx, 'update.message.from.username') === process.env.TELEGRAM_USERNAME ? fn() : fn_anonymous && fn_anonymous();
@@ -44,8 +46,8 @@ getDomain = (str) => {
   return (regex.exec(str)[1]);
 }
 
-login = () => {
-  return fetch(process.env.BASE_URL+process.env.LOGIN_URL, {
+loginRequest = () => {
+  return fetch(process.env.BASE_URL+process.env.loginRequest_URL, {
     method: 'POST',
     credentials: 'include',
     mode: "cors",
@@ -61,11 +63,11 @@ login = () => {
     },
     referrer: process.env.BASE_URL + '/',
     referrerPolicy: 'no-referrer-when-downgrade',
-    body: `numIntentos=&usuario=${process.env.LOGIN_USERNAME}&password=${process.env.LOGIN_PASSWORD}&g-recaptcha-response=`,
+    body: `numIntentos=&usuario=${process.env.loginRequest_USERNAME}&password=${process.env.loginRequest_PASSWORD}&g-recaptcha-response=`,
   })
 }
 
-clockInOut = (cookie, endpoint) => {
+clockInOutRequest = (cookie, endpoint) => {
   return fetch(process.env.BASE_URL+endpoint, {
     method: 'POST',
     mode: "cors",
@@ -85,6 +87,33 @@ clockInOut = (cookie, endpoint) => {
     referrer: process.env.BASE_URL + '/',
   });
 }
+
+setJobs = (ctx, bot, clockInTimer, clockOutTimer, daysOff, holidays) => {
+  const chatId = getChatId(ctx);
+  if (isWorkday(moment.tz(process.env.MOMENT_TZ), daysOff, holidays)) {
+    const workingTimeDurationInMins = randomNumber(
+      process.env.MIN_WORKINGDAY_DURATION*60, process.env.MAX_WORKINGDAY_DURATION*60
+    );
+    const clockInHour = moment.tz(
+      `${moment.tz(process.env.MOMENT_TZ).format('YYYY-MM-DD')} ${randomHour(process.env.MIN_START_HOUR, process.env.MAX_START_HOUR)}:00`,
+      'YYYY-MM-DD HH:mm:ss',
+      process.env.MOMENT_TZ
+    );
+    const clockOutHour = moment.tz(clockInHour, process.env.MOMENT_TZ).add(workingTimeDurationInMins, 'minutes');
+    bot.telegram.sendMessage(chatId, `I\'m going to start work at: ${clockInHour.format("HH:mm")}`);
+    clockInTimer = Object.assign(clockInTimer, schedule.scheduleJob(clockInHour.toDate(), () => {
+      commands.clockInCommand(ctx, bot);
+    }));
+    bot.telegram.sendMessage(chatId, `I\'m going to finish work at: ${clockOutHour.format("HH:mm")}`);
+    clockOutTimer = Object.assign(clockOutTimer, schedule.scheduleJob(clockOutHour.toDate(), () => {
+      commands.clockOutCommand(ctx, bot);
+    }));
+  } else {
+    bot.telegram.sendMessage(chatId, `Today I'm not going to work.`);
+    clockInTimer.nextInvocation() !== null && clockInTimer.cancelNext();
+    clockOutTimer.nextInvocation() !== null && clockOutTimer.cancelNext();
+  }
+};
 
 /**
  * Example of history update
@@ -112,5 +141,6 @@ module.exports.randomHour = randomHour;
 module.exports.randomNumber = randomNumber;
 module.exports.parseCookie = parseCookie;
 module.exports.getDomain = getDomain;
-module.exports.login = login;
-module.exports.clockInOut = clockInOut;
+module.exports.loginRequest = loginRequest;
+module.exports.clockInOutRequest = clockInOutRequest;
+module.exports.setJobs = setJobs;

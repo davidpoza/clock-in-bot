@@ -1,44 +1,31 @@
 require('dotenv').config();
 const schedule = require('node-schedule');
 const moment = require('moment-timezone');
+const isEmpty = require('lodash.isempty');
 const functions = require('./functions.js');
 
 
-
-module.exports.initJobsCommand=(ctx, bot, daysOff, holidays) => {
-  ctx.reply('Setting jobs...');
-  const chatId = functions.getChatId(ctx);
-  globalTimer = schedule.scheduleJob('0 0 0 * * *', () => {
-    if (isWorkday(moment.tz(process.env.MOMENT_TZ), daysOff, holidays)) {
-      const clockInHour = moment.tz(
-        `${randomHour(process.env.MIN_START_HOUR, process.env.MAX_START_HOUR)} ${
-          moment.tz(process.env.MOMENT_TZ, process.env.MOMENT_TZ).format('DD/MM/YYYY')
-         }`, 'HH:mm DD/MM/YYYY'
-      );
-      const workingTimeDurationInMins = randomNumber(
-        process.env.MIN_WORKINGDAY_DURATION*60, process.env.MAX_WORKINGDAY_DURATION*60
-      );
-      const clockOutHour = moment.tz(clockInHour, process.env.MOMENT_TZ).add(workingTimeDurationInMins, 'minutes');
-      bot.telegram.sendMessage(chatId, `I\'m going to start work at: ${clockInHour.format("HH:mm")}`);
-      bot.telegram.sendMessage(chatId, `I\'m going to finish work at: ${clockOutHour.format("HH:mm")}`);
-      clockInTimer = schedule.scheduleJob(clockInHour.toDate(), () => {
-        clockInCommand(ctx);
-      });
-      clockOutTimer = schedule.scheduleJob(clockOutHour.toDate(), () => {
-        clockOutCommand(ctx);
-      });
-    }
-  });
+module.exports.initJobsCommand=(ctx, bot, globalTimer, clockInTimer, clockOutTimer, daysOff, holidays) => {
+  if (isEmpty(globalTimer)) {
+    ctx.reply('Setting main and secondary jobs...');
+    globalTimer = Object.assign(globalTimer, schedule.scheduleJob('0 0 0 * * *', () => {
+      //in this case we are programming next day during night
+      functions.setJobs(ctx, bot, clockInTimer, clockOutTimer, daysOff, holidays);
+    }));
+  } else {
+    ctx.reply('Force resetting secondary jobs now...');
+    functions.setJobs(ctx, bot, clockInTimer, clockOutTimer, daysOff, holidays);
+  }
 };
 
 module.exports.clockInCommand=(ctx, bot) => {
   const chatId = functions.getChatId(ctx);
   functions.isFromMe(ctx, () => {
-    functions.login()
+    functions.loginRequest()
       .then((res) => {
         const jsessionid=functions.parseCookie(res.headers.raw()['set-cookie']);
         return resolve();
-        return functions.clockInOut(jsessionid, process.env.START_WORK_ENDPOINT);
+        return functions.clockInOutRequest(jsessionid, process.env.START_WORK_ENDPOINT);
       })
       .then((res) => {
         bot.telegram.sendMessage(chatId, 'I\'ve just clock-in my friend.👍');
@@ -53,11 +40,11 @@ module.exports.clockInCommand=(ctx, bot) => {
 module.exports.clockOutCommand=(ctx, bot) => {
   const chatId = functions.getChatId(ctx);
   functions.isFromMe(ctx, () => {
-    functions.login()
+    functions.loginRequest()
       .then((res) => {
         const jsessionid = functions.parseCookie(res.headers.raw()['set-cookie']);
         return resolve();
-        return functions.clockInOut(jsessionid, process.env.END_WORK_ENDPOINT);
+        return functions.clockInOutRequest(jsessionid, process.env.END_WORK_ENDPOINT);
       })
       .then((res) => {
         bot.telegram.sendMessage(chatId, 'I\'ve just clock-out!!. What such a hard working day👏🏼.');
