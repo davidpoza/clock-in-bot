@@ -38,15 +38,15 @@ let clockOutTimer;
 let chatId;
 let lastClockIn;
 let lastClockOut;
-const minWorkingTimeDuration=process.env.MIN_WORKINGDAY_DURATION*60; //in minutes
-const maxWorkingTimeDuration=process.env.MAX_WORKINGDAY_DURATION*60; //in minutes
 
 bot.start((ctx) => {
   functions.isFromMe(ctx, () => {
-    ctx.reply(`Welcome ${process.env.TELEGRAM_USERNAME}!`);
-    ctx.reply('Bot initialized!');
-    ctx.reply('Setting jobs...');
-    chatId=functions.getChatId(ctx);
+    if (!chatId) {
+      ctx.reply(`Welcome ${process.env.TELEGRAM_USERNAME}!`);
+      chatId = functions.getChatId(ctx);
+    } else {
+      ctx.reply(`You are ${process.env.TELEGRAM_USERNAME}... I already know it....`);
+    }
     commands.initJobsCommand(ctx, daysOff, holidays);
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');

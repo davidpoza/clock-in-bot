@@ -1,5 +1,6 @@
+require('dotenv').config();
 const moment = require('moment-timezone');
-const get =require('lodash.get');
+const get = require('lodash.get');
 const fetch = require('node-fetch');
 
 isFromMe = (ctx, fn, fn_anonymous=() => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
@@ -11,7 +12,7 @@ getChatId = (ctx) => {
 }
 
 isWorkday = (date, daysOff, holidays) => {
-  let dow=moment.tz(date, process.env.MOMENT_TZ).isoWeekday(); //1:lunes, 7:domingo
+  let dow = moment.tz(date, process.env.MOMENT_TZ).isoWeekday(); //1:lunes, 7:domingo
   let formattedDate=moment.tz(date, process.env.MOMENT_TZ).format('DD/MM/YYYY');
   if (dow === 6 || dow === 7) {
     return false;
@@ -23,9 +24,9 @@ isWorkday = (date, daysOff, holidays) => {
 
 /* returns hour in format HH:MM between min and max */
 randomHour = (min, max) => {
-  let min_timestamp=moment(`${min} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
-  let max_timestamp=moment(`${max} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
-  let result_timestamp=Math.floor(Math.random() * (max_timestamp - min_timestamp)) + min_timestamp;
+  let min_timestamp = moment(`${min} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
+  let max_timestamp = moment(`${max} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
+  let result_timestamp = Math.floor(Math.random() * (max_timestamp - min_timestamp)) + min_timestamp;
   return (moment(new Date(result_timestamp*1000)).format('HH:mm'));
 }
 
@@ -34,12 +35,12 @@ randomNumber = (min, max) => {
 }
 
 parseCookie = (str) => {
-  const regex=/(JSESSIONID=[a-zA-Z0-9]*); Path=\//;
+  const regex = /(JSESSIONID=[a-zA-Z0-9]*); Path=\//;
   return (regex.exec(str)[1]);
 }
 
 getDomain = (str) => {
-  const regex=/https?:\/\/(.*)$/;
+  const regex = /https?:\/\/(.*)$/;
   return (regex.exec(str)[1]);
 }
 
