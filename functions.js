@@ -1,8 +1,8 @@
 require('dotenv').config();
 const moment = require('moment-timezone');
 const get = require('lodash.get');
-const fetch = require('node-fetch');
 const isEmpty = require('lodash.isempty');
+const fetch = require('node-fetch');
 const commands = require('./commands.js');
 
 isFromMe = (ctx, fn, fn_anonymous=() => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
@@ -87,19 +87,20 @@ clockInOutRequest = (cookie, endpoint) => {
     referrer: process.env.BASE_URL + '/',
   });
 }
-
-setJobs = (ctx, bot, schedule, clockInTimer, clockOutTimer, daysOff, holidays) => {
+/**
+ * TODO: transform into pure function
+ */
+setJobs = (ctx, bot, schedule, daysOff, holidays) => {
   const chatId = getChatId(ctx);
-console.log("--------", clockInTimer);
-console.log("++++++", clockOutTimer);
-  if (!isEmpty(clockInTimer) && clockInTimer.nextInvocation() !== null) {
-    clockInTimer.cancelNext();
-    console.log("cancelando job entrada");
-  }
-  if (!isEmpty(clockOutTimer) && clockOutTimer.nextInvocation() !== null) {
-    clockOutTimer.cancelNext();
-    console.log("cancelando job salida");
-  }
+
+  // if (!isEmpty(clockInTimer) && clockInTimer.nextInvocation() !== null) {
+  //   clockInTimer.cancelNext();
+  //   console.log("!!!!cancelando job entrada");
+  // }
+  // if (!isEmpty(clockOutTimer) && clockOutTimer.nextInvocation() !== null) {
+  //   clockOutTimer.cancelNext();
+  //   console.log("!!!!cancelando job salida");
+  // }
   if (isWorkday(moment.tz(process.env.MOMENT_TZ), daysOff, holidays)) {
     const workingTimeDurationInMins = randomNumber(
       process.env.MIN_WORKINGDAY_DURATION*60, process.env.MAX_WORKINGDAY_DURATION*60
@@ -111,18 +112,16 @@ console.log("++++++", clockOutTimer);
     );
     const clockOutHour = moment.tz(clockInHour, process.env.MOMENT_TZ).add(workingTimeDurationInMins, 'minutes');
     bot.telegram.sendMessage(chatId, `I\'m going to start work at: ${clockInHour.format("HH:mm")}`);
-    clockInTimer = Object.assign(clockInTimer, schedule.scheduleJob(clockInHour.toDate(), () => {
-      commands.clockInCommand(ctx, bot);
-    }));
-
+    // schedule.scheduleJob('clockInTimer', clockInHour.toDate(), () => {
+    //   commands.clockInCommand(ctx, bot);
+    // });
     bot.telegram.sendMessage(chatId, `I\'m going to finish work at: ${clockOutHour.format("HH:mm")}`);
-    clockOutTimer = Object.assign(clockOutTimer, schedule.scheduleJob(clockOutHour.toDate(), () => {
-      commands.clockOutCommand(ctx, bot);
-    }));
+    // schedule.scheduleJob('clockOutTimer', clockOutHour.toDate(), () => {
+    //   commands.clockOutCommand(ctx, bot);
+    // });
   } else {
     bot.telegram.sendMessage(chatId, `Today I'm not going to work.`);
   }
-  console.log(schedule)
 };
 
 /**

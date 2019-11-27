@@ -31,9 +31,7 @@ let holidays=[
   '08/12/2020',
   '25/12/2020',
 ];
-let globalTimer = {};
-let clockInTimer = {};
-let clockOutTimer = {};
+
 let chatId;
 
 bot.start((ctx) => {
@@ -44,7 +42,7 @@ bot.start((ctx) => {
     } else {
       ctx.reply(`You are ${process.env.TELEGRAM_USERNAME}... I already know it....`);
     }
-    commands.initJobsCommand(ctx, bot, schedule, globalTimer, clockInTimer, clockOutTimer, daysOff, holidays);
+    commands.initJobsCommand(ctx, bot, schedule, daysOff, holidays);
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });
@@ -72,7 +70,7 @@ bot.help((ctx) => {
 });
 
 bot.command('status', (ctx) => {
-  commands.statusCommand(ctx, schedule, clockInTimer, clockOutTimer, daysOff, holidays);
+  commands.statusCommand(ctx, schedule, daysOff, holidays);
 });
 
 bot.command('holidays', (ctx) => {

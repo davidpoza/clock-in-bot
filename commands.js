@@ -3,18 +3,20 @@ const moment = require('moment-timezone');
 const isEmpty = require('lodash.isempty');
 const functions = require('./functions.js');
 
-
-module.exports.initJobsCommand=(ctx, bot, schedule, globalTimer, clockInTimer, clockOutTimer, daysOff, holidays) => {
-  if (isEmpty(globalTimer)) {
+/**
+ * TODO: transform into pure function
+ */
+module.exports.initJobsCommand=(ctx, bot, schedule, daysOff, holidays) => {
+  if (!schedule.scheduledJobs.globalTimer) {
     ctx.reply('Setting main and secondary jobs...');
-    globalTimer = Object.assign(globalTimer, schedule.scheduleJob('0 0 0 * * *', () => {
-      //in this case we are programming next day during night
-      functions.setJobs(ctx, bot, schedule, clockInTimer, clockOutTimer, daysOff, holidays);
-    }));
+    schedule.scheduleJob('globalTimer', '0 0 0 * * *', () => {
+      functions.setJobs(ctx, bot, schedule, daysOff, holidays);
+    });
   } else {
     ctx.reply('Force resetting secondary jobs now...');
-    functions.setJobs(ctx, bot, schedule, clockInTimer, clockOutTimer, daysOff, holidays);
+    functions.setJobs(ctx, bot, schedule, daysOff, holidays);
   }
+  console.log(schedule)
 };
 
 module.exports.clockInCommand=(ctx, bot) => {
@@ -64,9 +66,8 @@ module.exports.holidaysCommand=(ctx, holidays, daysOff) => {
   });
 }
 
-module.exports.statusCommand=(ctx, schedule, clockInTimer, clockOutTimer, daysOff, holidays) => {
+module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
   functions.isFromMe(ctx, () => {
-    console.log(clockInTimer)
     const start = !isEmpty(clockInTimer) ? clockInTimer.nextInvocation() : false;
     const end = !isEmpty(clockOutTimer) ? clockOutTimer.nextInvocation() : false;
     console.log(start, end)
