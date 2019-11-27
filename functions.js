@@ -2,7 +2,6 @@ require('dotenv').config();
 const moment = require('moment-timezone');
 const get = require('lodash.get');
 const fetch = require('node-fetch');
-const isEmpty = require('lodash.isempty');
 const commands = require('./commands.js');
 
 isFromMe = (ctx, fn, fn_anonymous=() => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
@@ -114,7 +113,6 @@ console.log("++++++", clockOutTimer);
     clockInTimer = Object.assign(clockInTimer, schedule.scheduleJob(clockInHour.toDate(), () => {
       commands.clockInCommand(ctx, bot);
     }));
-
     bot.telegram.sendMessage(chatId, `I\'m going to finish work at: ${clockOutHour.format("HH:mm")}`);
     clockOutTimer = Object.assign(clockOutTimer, schedule.scheduleJob(clockOutHour.toDate(), () => {
       commands.clockOutCommand(ctx, bot);
