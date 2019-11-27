@@ -23,7 +23,6 @@ module.exports.clockInCommand=(ctx, bot) => {
     functions.loginRequest()
       .then((res) => {
         const jsessionid=functions.parseCookie(res.headers.raw()['set-cookie']);
-        return resolve();
         return functions.clockInOutRequest(jsessionid, process.env.START_WORK_ENDPOINT);
       })
       .then((res) => {
@@ -41,7 +40,6 @@ module.exports.clockOutCommand=(ctx, bot) => {
     functions.loginRequest()
       .then((res) => {
         const jsessionid = functions.parseCookie(res.headers.raw()['set-cookie']);
-        return resolve();
         return functions.clockInOutRequest(jsessionid, process.env.END_WORK_ENDPOINT);
       })
       .then((res) => {
