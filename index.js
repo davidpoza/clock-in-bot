@@ -49,11 +49,11 @@ bot.start((ctx) => {
 });
 
 bot.command('clock_in', (ctx) => {
-  commands.clockInCommand(ctx, bot);
+  commands.clockInCommand(ctx);
 });
 
 bot.command('clock_out', (ctx) => {
-  commands.clockOutCommand(ctx, bot);
+  commands.clockOutCommand(ctx);
 });
 
 bot.help((ctx) => {

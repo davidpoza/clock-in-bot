@@ -46,7 +46,7 @@ getDomain = (str) => {
 }
 
 loginRequest = () => {
-  return fetch(process.env.BASE_URL+process.env.loginRequest_URL, {
+  return fetch(process.env.BASE_URL+process.env.LOGIN_URL, {
     method: 'POST',
     credentials: 'include',
     mode: "cors",
@@ -62,7 +62,7 @@ loginRequest = () => {
     },
     referrer: process.env.BASE_URL + '/',
     referrerPolicy: 'no-referrer-when-downgrade',
-    body: `numIntentos=&usuario=${process.env.loginRequest_USERNAME}&password=${process.env.loginRequest_PASSWORD}&g-recaptcha-response=`,
+    body: `numIntentos=&usuario=${process.env.LOGIN_USERNAME}&password=${process.env.LOGIN_PASSWORD}&g-recaptcha-response=`,
   })
 }
 
@@ -116,11 +116,11 @@ setJobs = (ctx, schedule, daysOff, holidays) => {
     const clockOutHour = moment.tz(clockInHour, process.env.MOMENT_TZ).add(workingTimeDurationInMins, 'minutes');
 
     schedule.scheduleJob('clockInTimer', clockInHour.toDate(), () => {
-      commands.clockInCommand(ctx, bot);
+      commands.clockInCommand(ctx);
     });
 
     schedule.scheduleJob('clockOutTimer', clockOutHour.toDate(), () => {
-      commands.clockOutCommand(ctx, bot);
+      commands.clockOutCommand(ctx);
     });
 
     const { clockInTimer, clockOutTimer } = schedule.scheduledJobs;

@@ -17,8 +17,7 @@ module.exports.initJobsCommand=(ctx, schedule, daysOff, holidays) => {
   }
 };
 
-module.exports.clockInCommand=(ctx, bot) => {
-  const chatId = functions.getChatId(ctx);
+module.exports.clockInCommand=(ctx) => {
   functions.isFromMe(ctx, () => {
     functions.loginRequest()
       .then((res) => {
@@ -26,16 +25,15 @@ module.exports.clockInCommand=(ctx, bot) => {
         return functions.clockInOutRequest(jsessionid, process.env.START_WORK_ENDPOINT);
       })
       .then((res) => {
-        bot.telegram.sendMessage(chatId, 'I\'ve just clock-in my friend.👍');
+        ctx.reply('I\'ve just clock-in my friend.👍');
       })
       .catch((err) => {
-        bot.telegram.sendMessage(chatId, 'Error ocurred on clock-in: ', err);
+        ctx.reply('Error ocurred on clock-in: ', err);
       });
   });
 }
 
-module.exports.clockOutCommand=(ctx, bot) => {
-  const chatId = functions.getChatId(ctx);
+module.exports.clockOutCommand=(ctx) => {
   functions.isFromMe(ctx, () => {
     functions.loginRequest()
       .then((res) => {
@@ -43,10 +41,10 @@ module.exports.clockOutCommand=(ctx, bot) => {
         return functions.clockInOutRequest(jsessionid, process.env.END_WORK_ENDPOINT);
       })
       .then((res) => {
-        bot.telegram.sendMessage(chatId, 'I\'ve just clock-out!!. What such a hard working day👏🏼.');
+        ctx.reply('I\'ve just clock-out!!. What such a hard working day👏🏼.');
       })
       .catch((err) => {
-        bot.telegram.sendMessage(chatId, 'Error ocurred on clock-out: ', err);
+        ctx.reply('Error ocurred on clock-out: ', err);
       });
   });
 }
