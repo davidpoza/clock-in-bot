@@ -90,17 +90,21 @@ clockInOutRequest = (cookie, endpoint) => {
 /**
  * TODO: transform into pure function
  */
-setJobs = (ctx, bot, schedule, daysOff, holidays) => {
-  const chatId = getChatId(ctx);
+setJobs = (ctx, schedule, daysOff, holidays) => {
+  const { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
 
-  // if (!isEmpty(clockInTimer) && clockInTimer.nextInvocation() !== null) {
-  //   clockInTimer.cancelNext();
-  //   console.log("!!!!cancelando job entrada");
-  // }
-  // if (!isEmpty(clockOutTimer) && clockOutTimer.nextInvocation() !== null) {
-  //   clockOutTimer.cancelNext();
-  //   console.log("!!!!cancelando job salida");
-  // }
+  /**
+   * Rescheduling of jobs to take into account daysOff changes
+   */
+  if (clockInTimer && clockInTimer.nextInvocation() !== null) {
+    clockInTimer.cancelNext();
+    console.log("cancelling clockInTimer");
+  }
+  if (clockOutTimer && clockOutTimer.nextInvocation() !== null) {
+    clockOutTimer.cancelNext();
+    console.log("cancelling clockOutTimer");
+  }
+
   if (isWorkday(moment.tz(process.env.MOMENT_TZ), daysOff, holidays)) {
     const workingTimeDurationInMins = randomNumber(
       process.env.MIN_WORKINGDAY_DURATION*60, process.env.MAX_WORKINGDAY_DURATION*60
@@ -111,16 +115,25 @@ setJobs = (ctx, bot, schedule, daysOff, holidays) => {
       process.env.MOMENT_TZ
     );
     const clockOutHour = moment.tz(clockInHour, process.env.MOMENT_TZ).add(workingTimeDurationInMins, 'minutes');
-    bot.telegram.sendMessage(chatId, `I\'m going to start work at: ${clockInHour.format("HH:mm")}`);
-    // schedule.scheduleJob('clockInTimer', clockInHour.toDate(), () => {
-    //   commands.clockInCommand(ctx, bot);
-    // });
-    bot.telegram.sendMessage(chatId, `I\'m going to finish work at: ${clockOutHour.format("HH:mm")}`);
-    // schedule.scheduleJob('clockOutTimer', clockOutHour.toDate(), () => {
-    //   commands.clockOutCommand(ctx, bot);
-    // });
+
+    schedule.scheduleJob('clockInTimer', clockInHour.toDate(), () => {
+      commands.clockInCommand(ctx, bot);
+    });
+
+    schedule.scheduleJob('clockOutTimer', clockOutHour.toDate(), () => {
+      commands.clockOutCommand(ctx, bot);
+    });
+
+    const { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
+    if (clockInTimer && clockInTimer.nextInvocation() !== null) {
+      ctx.reply(`I'm going to start work at: ${clockInHour.format("HH:mm")}`);
+    }
+    if (clockOutTimer && clockOutTimer.nextInvocation() !== null) {
+      ctx.reply(`I'm going to finish work at: ${clockOutHour.format("HH:mm")}`);
+    }
+
   } else {
-    bot.telegram.sendMessage(chatId, `Today I'm not going to work.`);
+    ctx.reply(`Today I'm not going to work.`);
   }
 };
 

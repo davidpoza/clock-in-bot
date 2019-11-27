@@ -6,17 +6,16 @@ const functions = require('./functions.js');
 /**
  * TODO: transform into pure function
  */
-module.exports.initJobsCommand=(ctx, bot, schedule, daysOff, holidays) => {
+module.exports.initJobsCommand=(ctx, schedule, daysOff, holidays) => {
   if (!schedule.scheduledJobs.globalTimer) {
     ctx.reply('Setting main and secondary jobs...');
     schedule.scheduleJob('globalTimer', '0 0 0 * * *', () => {
-      functions.setJobs(ctx, bot, schedule, daysOff, holidays);
+      functions.setJobs(ctx, schedule, daysOff, holidays);
     });
   } else {
     ctx.reply('Force resetting secondary jobs now...');
-    functions.setJobs(ctx, bot, schedule, daysOff, holidays);
+    functions.setJobs(ctx, schedule, daysOff, holidays);
   }
-  console.log(schedule)
 };
 
 module.exports.clockInCommand=(ctx, bot) => {
@@ -68,18 +67,20 @@ module.exports.holidaysCommand=(ctx, holidays, daysOff) => {
 
 module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
   functions.isFromMe(ctx, () => {
-    const start = !isEmpty(clockInTimer) ? clockInTimer.nextInvocation() : false;
-    const end = !isEmpty(clockOutTimer) ? clockOutTimer.nextInvocation() : false;
-    console.log(start, end)
+    // reset jobs
+    functions.setJobs(ctx, schedule, daysOff, holidays);
+    const { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
+    const start = clockInTimer && clockInTimer.nextInvocation();
+    const end = clockOutTimer && clockOutTimer.nextInvocation();
+
     if (!start && !end) {
-      ctx.reply('Bot is not started. Run /start command.');
-    } else if (!isWorkday(moment.tz(process.env.MOMENT_TZ), daysOff, holidays)) {
-      ctx.reply('I\'m resting. Today\'s my day off.');
-    } else {
-      // work not started yet
-      if (moment.tz(start, process.env.MOMENT_TZ).isAfter(moment.tz(process.env.MOMENT_TZ))) {
-        ctx.reply('You hasn\'t started work yet. This will be at ' + moment.tz(start, process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm'));
-      }
+      ctx.reply('Today I have nothing to do.');
+    } else if (!start && end) {
+      // currently working
+      ctx.reply(`I'm currently working now. I'll clock-out at ${moment.tz(end, process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm')}`);
+    } else if (start && end) {
+      // work hasn't started
+      ctx.reply(`Work hasn't started yet. This will happen at ${moment.tz(start, process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm')}`);
     }
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');

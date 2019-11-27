@@ -42,7 +42,7 @@ bot.start((ctx) => {
     } else {
       ctx.reply(`You are ${process.env.TELEGRAM_USERNAME}... I already know it....`);
     }
-    commands.initJobsCommand(ctx, bot, schedule, daysOff, holidays);
+    commands.initJobsCommand(ctx, schedule, daysOff, holidays);
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });
