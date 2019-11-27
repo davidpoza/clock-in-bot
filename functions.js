@@ -1,7 +1,6 @@
 require('dotenv').config();
 const moment = require('moment-timezone');
 const get = require('lodash.get');
-const isEmpty = require('lodash.isempty');
 const fetch = require('node-fetch');
 const commands = require('./commands.js');
 
