@@ -74,7 +74,7 @@ module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
     const end = clockOutTimer && clockOutTimer.nextInvocation();
 
     if (!start && !end) {
-      ctx.reply('Today I have nothing to do.');
+      ctx.reply('Now i have nothing to do.');
     } else if (!start && end) {
       // currently working
       ctx.reply(`I'm currently working now. I'll clock-out at ${moment.tz(end, process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm')}`);
