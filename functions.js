@@ -90,19 +90,27 @@ clockInOutRequest = (cookie, endpoint) => {
  * TODO: transform into pure function
  */
 setJobs = (ctx, schedule, daysOff, holidays) => {
-  const { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
-
+  let { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
   /**
-   * Rescheduling of jobs to take into account daysOff changes
+   * Rescheduling of jobs to take into account daysOff changes.
+   * Doesn't reset clockOutTimer if clockInTimer.nextInvocation === null,
+   * that's said: a clock-in has happend.
+   * We don't want desynchronize/break a cycle in process.
+   * In short: clockOutTimer only can be cancelled if we are cancelling
+   * clockInTimer first.
    */
-  if (clockInTimer && clockInTimer.nextInvocation() !== null) {
-    clockInTimer.cancelNext();
+  if (clockInTimer) {
+    clockInTimer.cancel(); //cancel() totally deletes the job from schedule.
     console.log("cancelling clockInTimer");
+    if (clockOutTimer) {
+      clockOutTimer.cancel();
+      console.log("cancelling clockOutTimer");
+    }
   }
-  if (clockOutTimer && clockOutTimer.nextInvocation() !== null) {
-    clockOutTimer.cancelNext();
-    console.log("cancelling clockOutTimer");
-  }
+
+  // since objects have changed, we point them again
+  clockInTimer = schedule.scheduledJobs.clockInTimer;
+  clockOutTimer = schedule.scheduledJobs.clockOutTimer;
 
   if (isWorkday(moment.tz(process.env.MOMENT_TZ), daysOff, holidays)) {
     const workingTimeDurationInMins = randomNumber(
@@ -114,23 +122,20 @@ setJobs = (ctx, schedule, daysOff, holidays) => {
       process.env.MOMENT_TZ
     );
     const clockOutHour = moment.tz(clockInHour, process.env.MOMENT_TZ).add(workingTimeDurationInMins, 'minutes');
-
-    schedule.scheduleJob('clockInTimer', clockInHour.toDate(), () => {
-      commands.clockInCommand(ctx);
-    });
-
-    schedule.scheduleJob('clockOutTimer', clockOutHour.toDate(), () => {
-      commands.clockOutCommand(ctx);
-    });
-
-    const { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
-    if (clockInTimer && clockInTimer.nextInvocation() !== null) {
-      ctx.reply(`I'm going to start work at: ${clockInHour.format("HH:mm")}`);
+    // only reschedule if previously timer has been cancelled.
+    if(!clockInTimer) {
+      const j = schedule.scheduleJob('clockInTimer', clockInHour.toDate(), () => {
+        commands.clockInCommand(ctx);
+      });
+      j && ctx.reply(`I'm going to start work at: ${clockInHour.format("HH:mm")}`);
     }
-    if (clockOutTimer && clockOutTimer.nextInvocation() !== null) {
-      ctx.reply(`I'm going to finish work at: ${clockOutHour.format("HH:mm")}`);
+    // only reschedule if previously timer has been cancelled.
+    if(!clockOutTimer) {
+      const j = schedule.scheduleJob('clockOutTimer', clockOutHour.toDate(), () => {
+        commands.clockOutCommand(ctx);
+      });
+      j && ctx.reply(`I'm going to finish work at: ${clockOutHour.format("HH:mm")}`);
     }
-
   } else {
     ctx.reply(`Today I'm not going to work.`);
   }
