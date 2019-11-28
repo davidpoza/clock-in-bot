@@ -65,6 +65,9 @@ module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
     // reset jobs
     functions.setJobs(ctx, schedule, daysOff, holidays);
     const { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
+    /**
+     * we also have to check nextInvocation since a terminated job is not deleted from list
+     */
     const start = clockInTimer && clockInTimer.nextInvocation();
     const end = clockOutTimer && clockOutTimer.nextInvocation();
 
