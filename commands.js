@@ -22,7 +22,8 @@ module.exports.clockInCommand=(ctx) => {
     functions.loginRequest()
       .then((res) => {
         const jsessionid=functions.parseCookie(res.headers.raw()['set-cookie']);
-        return functions.clockInOutRequest(jsessionid, process.env.START_WORK_ENDPOINT);
+        //return functions.clockInOutRequest(jsessionid, process.env.START_WORK_ENDPOINT);
+        return resolve();
       })
       .then((res) => {
         ctx.reply('I\'ve just clock-in my friend.👍');
@@ -38,7 +39,8 @@ module.exports.clockOutCommand=(ctx) => {
     functions.loginRequest()
       .then((res) => {
         const jsessionid = functions.parseCookie(res.headers.raw()['set-cookie']);
-        return functions.clockInOutRequest(jsessionid, process.env.END_WORK_ENDPOINT);
+        //return functions.clockInOutRequest(jsessionid, process.env.END_WORK_ENDPOINT);
+        return resolve();
       })
       .then((res) => {
         ctx.reply('I\'ve just clock-out!!. What such a hard working day👏🏼.');
@@ -75,10 +77,11 @@ module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
       ctx.reply('Now i have nothing to do.');
     } else if (!start && end) {
       // currently working
-      ctx.reply(`I'm currently working now. I'll clock-out at ${moment.tz(end, process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm')}`);
+      ctx.reply(`I'm currently working now. I'll clock-out at ${moment.tz(new Date(end), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm')}`);
     } else if (start && end) {
       // work hasn't started
-      ctx.reply(`Work hasn't started yet. This will happen at ${moment.tz(start, process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm')}`);
+      console.log(start)
+      ctx.reply(`Work hasn't started yet. This will happen at ${moment.tz(new Date(start), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm')}`);
     }
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
