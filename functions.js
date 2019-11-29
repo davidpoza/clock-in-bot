@@ -103,7 +103,7 @@ clockInOutRequest = (cookie, endpoint) => {
 setJobs = (ctx, schedule, day, daysOff, holidays) => {
   let { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
 
-  if (clockInTimer) {
+  if (clockInTimer && clockInTimer.nextInvocation() !== null) { //if clockIn passed (nextInvocation is null) then not cancel clockOut
     clockInTimer.cancel(); //cancel() totally deletes the job from schedule.
     console.log("cancelling clockInTimer");
     if (clockOutTimer) {
@@ -158,6 +158,18 @@ isToday = (day) => {
 }
 
 /**
+ * checks if timer next invocation has passed
+ */
+jobExecuted = (timer) => {
+  console.log(timer.nextInvocation())
+  return (
+    moment.tz(
+      new Date(timer.nextInvocation), process.env.MOMENT_TZ
+    ).diff(moment.tz(process.env.MOMENT_TZ), 'seconds') < 0
+  );
+}
+
+/**
  * Example of history update
  *
  * fetch(process.env.BASE_URL+'/GestionITT/EmpleadoAction_updateHistoricoControlPresencia.action', {
@@ -188,3 +200,4 @@ module.exports.clockInOutRequest = clockInOutRequest;
 module.exports.setJobs = setJobs;
 module.exports.jobRangeToString = jobRangeToString;
 module.exports.isToday = isToday;
+module.exports.jobExecuted = jobExecuted;

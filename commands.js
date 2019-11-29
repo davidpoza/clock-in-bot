@@ -19,11 +19,12 @@ module.exports.initJobsCommand=(ctx, schedule, daysOff, holidays) => {
 
 module.exports.clockInCommand=(ctx) => {
   functions.isFromMe(ctx, () => {
-    functions.loginRequest()
+    Promise.resolve("OK")
+    //functions.loginRequest()
       .then((res) => {
         const jsessionid=functions.parseCookie(res.headers.raw()['set-cookie']);
         //return functions.clockInOutRequest(jsessionid, process.env.START_WORK_ENDPOINT);
-        return resolve();
+        return Promise.resolve("OK");
       })
       .then((res) => {
         ctx.reply('I\'ve just clock-in my friend.👍');
@@ -36,11 +37,12 @@ module.exports.clockInCommand=(ctx) => {
 
 module.exports.clockOutCommand=(ctx) => {
   functions.isFromMe(ctx, () => {
-    functions.loginRequest()
+      Promise.resolve("OK")
+    //functions.loginRequest()
       .then((res) => {
         const jsessionid = functions.parseCookie(res.headers.raw()['set-cookie']);
         //return functions.clockInOutRequest(jsessionid, process.env.END_WORK_ENDPOINT);
-        return resolve();
+        return Promise.resolve("OK");
       })
       .then((res) => {
         ctx.reply('I\'ve just clock-out!!. What such a hard working day👏🏼.');
@@ -72,7 +74,9 @@ module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
      */
     const start = clockInTimer && clockInTimer.nextInvocation();
     const end = clockOutTimer && clockOutTimer.nextInvocation();
-
+    if (start === null && end) {
+      ctx.reply(`I'm at work right now but it ends at ${moment.tz(new Date(end), process.env.MOMENT_TZ).format("HH:mm")}`);
+    }
     if (!start && !end) {
       //we try with tomorrow
       functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ).add(1, 'days'), daysOff, holidays);
@@ -82,9 +86,6 @@ module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
       if (!start && !end) {
         ctx.reply(`I've nothing to do today nor tomorrow.`);
       }
-    } else if (!start && end) {
-      // currently working
-      ctx.reply(`I'm currently working now. I'll clock-out at ${moment.tz(new Date(end), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm')}`);
     }
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
