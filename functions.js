@@ -88,17 +88,21 @@ clockInOutRequest = (cookie, endpoint) => {
 }
 /**
  * TODO: transform into pure function
+ * Rescheduling of jobs to take into account daysOff changes.
+ * Doesn't reset clockOutTimer if clockInTimer.nextInvocation === null,
+ * that's said: a clock-in has happend.
+ * We don't want desynchronize/break a cycle in process.
+ * In short: clockOutTimer only can be cancelled if we are cancelling
+ * clockInTimer first.
+ * @param ctx {Object}: telegraf context
+ * @param schedule {Object}: node-schedule object
+ * @param day {Object}: moment day for which we're setting the timers
+ * @param daysOff {Array<string>}: days-off dates list
+ * @param holidays {Array<string>}: holidays dates list
  */
-setJobs = (ctx, schedule, daysOff, holidays) => {
+setJobs = (ctx, schedule, day, daysOff, holidays) => {
   let { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
-  /**
-   * Rescheduling of jobs to take into account daysOff changes.
-   * Doesn't reset clockOutTimer if clockInTimer.nextInvocation === null,
-   * that's said: a clock-in has happend.
-   * We don't want desynchronize/break a cycle in process.
-   * In short: clockOutTimer only can be cancelled if we are cancelling
-   * clockInTimer first.
-   */
+
   if (clockInTimer) {
     clockInTimer.cancel(); //cancel() totally deletes the job from schedule.
     console.log("cancelling clockInTimer");
@@ -107,17 +111,16 @@ setJobs = (ctx, schedule, daysOff, holidays) => {
       console.log("cancelling clockOutTimer");
     }
   }
-
   // since objects have changed, we point them again
   clockInTimer = schedule.scheduledJobs.clockInTimer;
   clockOutTimer = schedule.scheduledJobs.clockOutTimer;
 
-  if (isWorkday(moment.tz(process.env.MOMENT_TZ), daysOff, holidays)) {
+  if (isWorkday(day, daysOff, holidays)) {
     const workingTimeDurationInMins = randomNumber(
       process.env.MIN_WORKINGDAY_DURATION*60, process.env.MAX_WORKINGDAY_DURATION*60
     );
     const clockInHour = moment.tz(
-      `${moment.tz(process.env.MOMENT_TZ).format('YYYY-MM-DD')} ${randomHour(process.env.MIN_START_HOUR, process.env.MAX_START_HOUR)}:00`,
+      `${day.format('YYYY-MM-DD')} ${randomHour(process.env.MIN_START_HOUR, process.env.MAX_START_HOUR)}:00`,
       'YYYY-MM-DD HH:mm:ss',
       process.env.MOMENT_TZ
     );
@@ -127,19 +130,32 @@ setJobs = (ctx, schedule, daysOff, holidays) => {
       const j = schedule.scheduleJob('clockInTimer', clockInHour.toDate(), () => {
         commands.clockInCommand(ctx);
       });
-      j && ctx.reply(`I'm going to start work at: ${clockInHour.format("HH:mm")}`);
+      j && isToday(day) && ctx.reply(`I'm going to start work at ${clockInHour.format("HH:mm")}`);
+      j && !isToday(day) && ctx.reply(`I'm going to start work on ${clockInHour.format("dddd D [at] HH:mm")}`);
     }
     // only reschedule if previously timer has been cancelled.
     if(!clockOutTimer) {
       const j = schedule.scheduleJob('clockOutTimer', clockOutHour.toDate(), () => {
         commands.clockOutCommand(ctx);
       });
-      j && ctx.reply(`I'm going to finish work at: ${clockOutHour.format("HH:mm")}`);
+      j && isToday(day) && ctx.reply(`I'm going to finish work at ${clockOutHour.format("HH:mm")}`);
+      j && !isToday(day) && ctx.reply(`I'm going to finish work on ${clockOutHour.format("dddd D [at] HH:mm")}`);
     }
-  } else {
-    ctx.reply(`Today I'm not going to work.`);
   }
 };
+
+jobRangeToString = (j1, j2) => {
+  const date1 = j1 && j1.nextInvocation();
+  const date2 = j2 && j2.nextInvocation();
+  return (`
+    ${moment.tz(new Date(date1), process.env.MOMENT_TZ).format('HH:mm')} to
+    ${moment.tz(new Date(date2), process.env.MOMENT_TZ).format('HH:mm')}
+  `);
+}
+
+isToday = (day) => {
+  return (moment.tz(process.env.MOMENT_TZ).diff(day, 'days') === 0)
+}
 
 /**
  * Example of history update
@@ -170,3 +186,5 @@ module.exports.getDomain = getDomain;
 module.exports.loginRequest = loginRequest;
 module.exports.clockInOutRequest = clockInOutRequest;
 module.exports.setJobs = setJobs;
+module.exports.jobRangeToString = jobRangeToString;
+module.exports.isToday = isToday;

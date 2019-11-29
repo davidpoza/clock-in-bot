@@ -9,11 +9,11 @@ module.exports.initJobsCommand=(ctx, schedule, daysOff, holidays) => {
   if (!schedule.scheduledJobs.globalTimer) {
     ctx.reply('Setting main and secondary jobs...');
     schedule.scheduleJob('globalTimer', '0 0 0 * * *', () => {
-      functions.setJobs(ctx, schedule, daysOff, holidays);
+      functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ), daysOff, holidays);
     });
   } else {
     ctx.reply('Force resetting secondary jobs now...');
-    functions.setJobs(ctx, schedule, daysOff, holidays);
+    functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ), daysOff, holidays);
   }
 };
 
@@ -65,7 +65,7 @@ module.exports.holidaysCommand=(ctx, holidays, daysOff) => {
 module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
   functions.isFromMe(ctx, () => {
     // reset jobs
-    functions.setJobs(ctx, schedule, daysOff, holidays);
+    functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ), daysOff, holidays);
     const { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
     /**
      * we also have to check nextInvocation since a terminated job is not deleted from list
@@ -74,14 +74,17 @@ module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
     const end = clockOutTimer && clockOutTimer.nextInvocation();
 
     if (!start && !end) {
-      ctx.reply('Now i have nothing to do.');
+      //we try with tomorrow
+      functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ).add(1, 'days'), daysOff, holidays);
+      const { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
+      const start = clockInTimer && clockInTimer.nextInvocation();
+      const end = clockOutTimer && clockOutTimer.nextInvocation();
+      if (!start && !end) {
+        ctx.reply(`I've nothing to do today nor tomorrow.`);
+      }
     } else if (!start && end) {
       // currently working
       ctx.reply(`I'm currently working now. I'll clock-out at ${moment.tz(new Date(end), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm')}`);
-    } else if (start && end) {
-      // work hasn't started
-      console.log(start)
-      ctx.reply(`Work hasn't started yet. This will happen at ${moment.tz(new Date(start), process.env.MOMENT_TZ).format('DD/MM/YYYY HH:mm')}`);
     }
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
