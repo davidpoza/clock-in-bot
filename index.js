@@ -95,21 +95,13 @@ bot.command('holidays', (ctx) => {
  * listen for the selected date event, calendar needs it for working.
  * Also receives selected date with following format: YYYY-MM-DD
  */
-cal.setDateListener((context, date) => {
-  context.reply(date);
+cal.setDateListener((ctx, date) => {
+  functions.insertHoliday(ctx, holidays, date);
 });
 
-bot.command("add_holiday", context => {
-	const today = new Date();
-	const minDate = new Date();
-	minDate.setMonth(today.getMonth() - 2);
-	const maxDate = new Date();
-	maxDate.setMonth(today.getMonth() + 2);
-	maxDate.setDate(today.getDate());
-
-	context.reply("Select your holiday date:", cal.setMinDate(minDate).setMaxDate(maxDate).getCalendar())
+bot.command("add_holiday", (ctx) => {
+  commands.addHolidayCommand(ctx, holidays, cal, 'Select your holiday date: ');
 });
-
 
 bot.startPolling();
 bot.use(/*Telegraf.log()*/);

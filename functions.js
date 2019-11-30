@@ -169,6 +169,22 @@ jobExecuted = (timer) => {
   );
 }
 
+launchCalendar = (ctx, cal, msg) => {
+  const today = new Date();
+	const minDate = new Date();
+	minDate.setMonth(today.getMonth() - 2);
+	const maxDate = new Date();
+	maxDate.setMonth(today.getMonth() + 2);
+	maxDate.setDate(today.getDate());
+
+	ctx.reply(msg, cal.setMinDate(minDate).setMaxDate(maxDate).getCalendar())
+};
+
+insertHoliday = (ctx, holidays, date) => {
+  holidays.push(date);
+  ctx.reply(`${date} has been added to you holidays calendar.`);
+};
+
 /**
  * Example of history update
  *
@@ -201,3 +217,5 @@ module.exports.setJobs = setJobs;
 module.exports.jobRangeToString = jobRangeToString;
 module.exports.isToday = isToday;
 module.exports.jobExecuted = jobExecuted;
+module.exports.launchCalendar = launchCalendar;
+module.exports.insertHoliday = insertHoliday;

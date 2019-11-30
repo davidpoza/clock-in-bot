@@ -64,6 +64,14 @@ module.exports.holidaysCommand=(ctx, holidays, daysOff) => {
   });
 }
 
+module.exports.addHolidayCommand=(ctx, holidays, cal, msg) => {
+  functions.isFromMe(ctx, () => {
+    functions.launchCalendar(ctx, cal, msg);
+  }, () => {
+    ctx.reply('I don\'t know who you are... I\'ll ignore you.');
+  });
+}
+
 module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
   functions.isFromMe(ctx, () => {
     // reset jobs
