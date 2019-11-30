@@ -2,11 +2,20 @@
 require('dotenv').config();
 const Telegraf = require('telegraf');
 const schedule = require('node-schedule');
+const calendar = require('telegraf-calendar-telegram');
 const commands = require('./commands.js');
 const functions = require('./functions.js');
 
-
 const bot=new Telegraf(process.env.BOT_TOKEN);
+const cal = new calendar(bot, {
+	startWeekDay: 1,
+	weekDayNames: ["L", "M", "M", "G", "V", "S", "D"],
+	monthNames: [
+		"Ene", "Feb", "Mar", "Abr", "May", "Jun",
+		"Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+	]
+});
+
 let daysOff=[
   '26/12/2019',
   '27/12/2019',
@@ -76,6 +85,31 @@ bot.command('status', (ctx) => {
 bot.command('holidays', (ctx) => {
   commands.holidaysCommand(ctx, holidays, daysOff);
 });
+
+// bot.command((ctx) => {
+//   console.log('command',ctx.message.text)
+//  // Dynamic command handling
+// })
+
+/**
+ * listen for the selected date event, calendar needs it for working.
+ * Also receives selected date with following format: YYYY-MM-DD
+ */
+cal.setDateListener((context, date) => {
+  context.reply(date);
+});
+
+bot.command("add_holiday", context => {
+	const today = new Date();
+	const minDate = new Date();
+	minDate.setMonth(today.getMonth() - 2);
+	const maxDate = new Date();
+	maxDate.setMonth(today.getMonth() + 2);
+	maxDate.setDate(today.getDate());
+
+	context.reply("Select your holiday date:", cal.setMinDate(minDate).setMaxDate(maxDate).getCalendar())
+});
+
 
 bot.startPolling();
 bot.use(/*Telegraf.log()*/);
