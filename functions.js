@@ -182,13 +182,27 @@ launchCalendar = (ctx, cal, msg) => {
 	ctx.reply(msg, cal.setMinDate(minDate).setMaxDate(maxDate).getCalendar())
 };
 
-insertDay = (ctx, db, date, type) => {
-  if (type != 'holidays' && type != 'daysOff') return;
+insertDeleteDay = (ctx, db, date, type) => {
+  if (type !== 'holidays' && type !== 'daysOff') return;
   const formatedDate = moment.tz(date, 'YYYY-MM-DD', process.env.MOMENT_TZ).format('DD/MM/YYYY');
-  db.get(type)
-    .push(formatedDate)
-    .write();
-  ctx.reply(`${formatedDate} has been added to your ${type} calendar.`);
+  const holidays = db.get('holidays').value();
+  const daysOff = db.get('daysOff').value();
+  if (type === 'holidays' && holidays.includes(formatedDate)) {
+    holidays.splice( holidays.indexOf(formatedDate), 1 );
+    db.set('holidays', holidays)
+      .write();
+    ctx.reply(`${formatedDate} has been removed to your holidays calendar.`);
+  } else if (type === 'daysOff' && daysOff.includes(formatedDate)) {
+    daysOff.splice( daysOff.indexOf(formatedDate), 1 );
+    db.set('daysOff', daysOff)
+      .write();
+    ctx.reply(`${formatedDate} has been removed to your daysOff calendar.`);
+  } else {
+    db.get(type)
+      .push(formatedDate)
+      .write();
+    ctx.reply(`${formatedDate} has been added to your ${type} calendar.`);
+  }
 };
 
 module.exports.isFromMe = isFromMe;
@@ -205,4 +219,4 @@ module.exports.jobRangeToString = jobRangeToString;
 module.exports.isToday = isToday;
 module.exports.jobExecuted = jobExecuted;
 module.exports.launchCalendar = launchCalendar;
-module.exports.insertDay = insertDay;
+module.exports.insertDeleteDay = insertDeleteDay;

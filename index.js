@@ -56,8 +56,8 @@ bot.help((ctx) => {
   * /clock_in
   * /clock_out
   * /holidays
-  * /add_holiday
-  * /add_dayoff
+  * /add_holiday (remove if it exists)
+  * /add_dayoff (remove if it exists)
   * /tomorrow_not_work
   * /today_not_work
   `);
@@ -76,19 +76,19 @@ bot.command('holidays', (ctx) => {
  * Also receives selected date with following format: YYYY-MM-DD
  */
 calDaysOff.setDateListener((ctx, date) => {
-  functions.insertDay(ctx, db, date, 'daysOff');
+  functions.insertDeleteDay(ctx, db, date, 'daysOff');
 });
 
 calHolidays.setDateListener((ctx, date) => {
-  functions.insertDay(ctx, db, date, 'holidays');
+  functions.insertDeleteDay(ctx, db, date, 'holidays');
 });
 
 bot.command("add_holiday", (ctx) => {
-  commands.addHolidayCommand(ctx, db, calHolidays, 'Select your holiday date: ');
+  commands.addRemoveDateCommand(ctx, calHolidays, 'Select day to be added/removed from your holidays: ');
 });
 
 bot.command("add_dayoff", (ctx) => {
-  commands.addDayOffCommand(ctx, db, calDaysOff, 'Select your day-off ');
+  commands.addRemoveDateCommand(ctx, calDaysOff, 'Select day to be added/removed from your daysOff: ');
 });
 
 bot.catch((err) => {

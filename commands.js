@@ -57,24 +57,14 @@ module.exports.holidaysCommand=(ctx, db) => {
   functions.isFromMe(ctx, () => {
     const holidays = db.get('holidays').value();
     const daysOff = db.get('daysOff').value();
-    ctx.reply('Your holdays are:');
-    ctx.reply(holidays.join('\n'));
-    ctx.reply('and your days off:');
-    ctx.reply(daysOff.join('\n'));
+    ctx.reply(`Your holdays are: \n${holidays.length === 0 ? 'there are no holidays' : holidays.join('\n')}`);
+    ctx.reply(`Your days-off are: \n${daysOff.length === 0 ? 'there are no days-off' : daysOff.join('\n')}`);
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });
 }
 
-module.exports.addHolidayCommand=(ctx, db, cal, msg) => {
-  functions.isFromMe(ctx, () => {
-    functions.launchCalendar(ctx, cal, msg);
-  }, () => {
-    ctx.reply('I don\'t know who you are... I\'ll ignore you.');
-  });
-}
-
-module.exports.addDayOffCommand=(ctx, db, cal, msg) => {
+module.exports.addRemoveDateCommand=(ctx, cal, msg) => {
   functions.isFromMe(ctx, () => {
     functions.launchCalendar(ctx, cal, msg);
   }, () => {

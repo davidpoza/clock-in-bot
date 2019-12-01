@@ -30,7 +30,7 @@ MOMENT_TZ=Europe/Madrid
 * /clock_in
 * /clock_out
 * /holidays
-* /add_holiday
-* /add_dayoff
+* /add_holiday (remove if it exists)
+* /add_dayoff (remove if it exists)
 * /tomorrow_not_work
 * /today_not_work
