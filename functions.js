@@ -12,7 +12,9 @@ getChatId = (ctx) => {
   return get(ctx, 'update.message.chat.id');
 }
 
-isWorkday = (date, daysOff, holidays) => {
+isWorkday = (date, db) => {
+  const holidays = db.get('holidays').value();
+  const daysOff = db.get('daysOff').value();
   let dow = moment.tz(date, process.env.MOMENT_TZ).isoWeekday(); //1:lunes, 7:domingo
   let formattedDate=moment.tz(date, process.env.MOMENT_TZ).format('DD/MM/YYYY');
   if (dow === 6 || dow === 7) {
@@ -100,7 +102,7 @@ clockInOutRequest = (cookie, endpoint) => {
  * @param daysOff {Array<string>}: days-off dates list
  * @param holidays {Array<string>}: holidays dates list
  */
-setJobs = (ctx, schedule, day, daysOff, holidays) => {
+setJobs = (ctx, schedule, day, db) => {
   let { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
 
   if (clockInTimer && clockInTimer.nextInvocation() !== null) { //if clockIn passed (nextInvocation is null) then not cancel clockOut
@@ -115,7 +117,7 @@ setJobs = (ctx, schedule, day, daysOff, holidays) => {
   clockInTimer = schedule.scheduledJobs.clockInTimer;
   clockOutTimer = schedule.scheduledJobs.clockOutTimer;
 
-  if (isWorkday(day, daysOff, holidays)) {
+  if (isWorkday(day, db)) {
     const workingTimeDurationInMins = randomNumber(
       process.env.MIN_WORKINGDAY_DURATION*60, process.env.MAX_WORKINGDAY_DURATION*60
     );
@@ -180,29 +182,14 @@ launchCalendar = (ctx, cal, msg) => {
 	ctx.reply(msg, cal.setMinDate(minDate).setMaxDate(maxDate).getCalendar())
 };
 
-insertHoliday = (ctx, holidays, date) => {
-  holidays.push(date);
-  ctx.reply(`${date} has been added to you holidays calendar.`);
+insertDay = (ctx, db, date, type) => {
+  if (type != 'holidays' && type != 'daysOff') return;
+  const formatedDate = moment.tz(date, 'YYYY-MM-DD', process.env.MOMENT_TZ).format('DD/MM/YYYY');
+  db.get(type)
+    .push(formatedDate)
+    .write();
+  ctx.reply(`${formatedDate} has been added to your ${type} calendar.`);
 };
-
-/**
- * Example of history update
- *
- * fetch(process.env.BASE_URL+'/GestionITT/EmpleadoAction_updateHistoricoControlPresencia.action', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            params: [
-              { idControlPresencia: "xxxxx", horaInicio: "2020-11-21T06:48:00.000Z", horaFin: "2020-11-21T17:15:00.000Z" },
-              { idControlPresencia: "xxxxx", horaInicio: "2020-11-20T06:48:00.000Z", horaFin: "2020-11-20T17:15:00.000Z" },
-              { idControlPresencia: "xxxxx", horaInicio: "2020-11-19T06:48:00.000Z", horaFin: "2020-11-19T17:15:00.000Z" },
-            ]
-          }),
-        });
- */
 
 module.exports.isFromMe = isFromMe;
 module.exports.getChatId = getChatId;
@@ -218,4 +205,4 @@ module.exports.jobRangeToString = jobRangeToString;
 module.exports.isToday = isToday;
 module.exports.jobExecuted = jobExecuted;
 module.exports.launchCalendar = launchCalendar;
-module.exports.insertHoliday = insertHoliday;
+module.exports.insertDay = insertDay;

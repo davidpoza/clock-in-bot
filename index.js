@@ -1,45 +1,28 @@
 
 require('dotenv').config();
+const low = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
 const Telegraf = require('telegraf');
 const schedule = require('node-schedule');
 const calendar = require('telegraf-calendar-telegram');
 const commands = require('./commands.js');
 const functions = require('./functions.js');
 
+const adapter = new FileSync('db.json');
+const db = low(adapter);
+db.defaults({ holidays: [], daysOff: [] })
+  .write();
 const bot=new Telegraf(process.env.BOT_TOKEN);
-const cal = new calendar(bot, {
+const calProps = {
 	startWeekDay: 1,
 	weekDayNames: ["L", "M", "M", "G", "V", "S", "D"],
 	monthNames: [
 		"Ene", "Feb", "Mar", "Abr", "May", "Jun",
 		"Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
 	]
-});
-
-let daysOff=[
-  '26/12/2019',
-  '27/12/2019',
-  '30/12/2019',
-  '02/01/2020',
-  '03/01/2020',
-];
-let holidays=[
-  '06/12/2019',
-  '09/12/2019',
-  '25/12/2019',
-  '01/01/2020',
-  '06/01/2020',
-  '09/04/2020',
-  '10/04/2020',
-  '01/05/2020',
-  '15/08/2020',
-  '12/10/2020',
-  '02/11/2020',
-  '09/11/2020',
-  '07/12/2020',
-  '08/12/2020',
-  '25/12/2020',
-];
+};
+const calDaysOff = new calendar(bot, calProps);
+const calHolidays = new calendar(bot, calProps);
 
 let chatId;
 
@@ -51,7 +34,7 @@ bot.start((ctx) => {
     } else {
       ctx.reply(`You are ${process.env.TELEGRAM_USERNAME}... I already know it....`);
     }
-    commands.initJobsCommand(ctx, schedule, daysOff, holidays);
+    commands.initJobsCommand(ctx, schedule, db);
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });
@@ -73,35 +56,45 @@ bot.help((ctx) => {
   * /clock_in
   * /clock_out
   * /holidays
+  * /add_holiday
+  * /add_dayoff
   * /tomorrow_not_work
   * /today_not_work
   `);
 });
 
 bot.command('status', (ctx) => {
-  commands.statusCommand(ctx, schedule, daysOff, holidays);
+  commands.statusCommand(ctx, schedule, db);
 });
 
 bot.command('holidays', (ctx) => {
-  commands.holidaysCommand(ctx, holidays, daysOff);
+  commands.holidaysCommand(ctx, db);
 });
-
-// bot.command((ctx) => {
-//   console.log('command',ctx.message.text)
-//  // Dynamic command handling
-// })
 
 /**
  * listen for the selected date event, calendar needs it for working.
  * Also receives selected date with following format: YYYY-MM-DD
  */
-cal.setDateListener((ctx, date) => {
-  functions.insertHoliday(ctx, holidays, date);
+calDaysOff.setDateListener((ctx, date) => {
+  functions.insertDay(ctx, db, date, 'daysOff');
+});
+
+calHolidays.setDateListener((ctx, date) => {
+  functions.insertDay(ctx, db, date, 'holidays');
 });
 
 bot.command("add_holiday", (ctx) => {
-  commands.addHolidayCommand(ctx, holidays, cal, 'Select your holiday date: ');
+  commands.addHolidayCommand(ctx, db, calHolidays, 'Select your holiday date: ');
 });
 
+bot.command("add_dayoff", (ctx) => {
+  commands.addDayOffCommand(ctx, db, calDaysOff, 'Select your day-off ');
+});
+
+bot.catch((err) => {
+	console.log("Error in bot:", err);
+});
+
+
 bot.startPolling();
-bot.use(/*Telegraf.log()*/);
+

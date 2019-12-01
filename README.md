@@ -22,7 +22,7 @@ LOGIN_PASSWORD=xxxxxx
 MOMENT_TZ=Europe/Madrid
 ```
 
-# Avaible commands
+# Available commands
 
 * /help
 * /start
@@ -30,5 +30,7 @@ MOMENT_TZ=Europe/Madrid
 * /clock_in
 * /clock_out
 * /holidays
+* /add_holiday
+* /add_dayoff
 * /tomorrow_not_work
 * /today_not_work

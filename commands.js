@@ -5,15 +5,15 @@ const functions = require('./functions.js');
 /**
  * TODO: transform into pure function
  */
-module.exports.initJobsCommand=(ctx, schedule, daysOff, holidays) => {
+module.exports.initJobsCommand=(ctx, schedule, db) => {
   if (!schedule.scheduledJobs.globalTimer) {
     ctx.reply('Setting main and secondary jobs...');
     schedule.scheduleJob('globalTimer', '0 0 0 * * *', () => {
-      functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ), daysOff, holidays);
+      functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ), db);
     });
   } else {
     ctx.reply('Force resetting secondary jobs now...');
-    functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ), daysOff, holidays);
+    functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ), db);
   }
 };
 
@@ -53,18 +53,20 @@ module.exports.clockOutCommand=(ctx) => {
   });
 }
 
-module.exports.holidaysCommand=(ctx, holidays, daysOff) => {
+module.exports.holidaysCommand=(ctx, db) => {
   functions.isFromMe(ctx, () => {
+    const holidays = db.get('holidays').value();
+    const daysOff = db.get('daysOff').value();
     ctx.reply('Your holdays are:');
     ctx.reply(holidays.join('\n'));
-    ctx.reply('and:');
+    ctx.reply('and your days off:');
     ctx.reply(daysOff.join('\n'));
   }, () => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });
 }
 
-module.exports.addHolidayCommand=(ctx, holidays, cal, msg) => {
+module.exports.addHolidayCommand=(ctx, db, cal, msg) => {
   functions.isFromMe(ctx, () => {
     functions.launchCalendar(ctx, cal, msg);
   }, () => {
@@ -72,10 +74,18 @@ module.exports.addHolidayCommand=(ctx, holidays, cal, msg) => {
   });
 }
 
-module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
+module.exports.addDayOffCommand=(ctx, db, cal, msg) => {
+  functions.isFromMe(ctx, () => {
+    functions.launchCalendar(ctx, cal, msg);
+  }, () => {
+    ctx.reply('I don\'t know who you are... I\'ll ignore you.');
+  });
+}
+
+module.exports.statusCommand=(ctx, schedule, db) => {
   functions.isFromMe(ctx, () => {
     // reset jobs
-    functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ), daysOff, holidays);
+    functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ), db);
     const { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
     /**
      * we also have to check nextInvocation since a terminated job is not deleted from list
@@ -87,7 +97,7 @@ module.exports.statusCommand=(ctx, schedule, daysOff, holidays) => {
     }
     if (!start && !end) {
       //we try with tomorrow
-      functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ).add(1, 'days'), daysOff, holidays);
+      functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ).add(1, 'days'), db);
       const { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
       const start = clockInTimer && clockInTimer.nextInvocation();
       const end = clockOutTimer && clockOutTimer.nextInvocation();
