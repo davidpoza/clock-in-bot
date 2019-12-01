@@ -60,8 +60,8 @@ bot.help((ctx) => {
   * /holidays
   * /add_holiday (remove if it exists)
   * /add_dayoff (remove if it exists)
-  * /tomorrow_not_work
-  * /today_not_work
+  * /tomorrow_not_work (acts as switch)
+  * /today_not_work (acts as switch)
   `);
 });
 
@@ -95,6 +95,16 @@ bot.command('add_holiday', (ctx) => {
 bot.command('add_dayoff', (ctx) => {
   previousCommand = "add_dayoff";
   commands.addRemoveDateCommand(ctx, cal, 'Select day to be added/removed from your daysOff: ');
+});
+
+bot.command('today_not_work', (ctx) => {
+  previousCommand = "today_not_work";
+  commands.todayNotWorkCommand(ctx, schedule, db);
+});
+
+bot.command('tomorrow_not_work', (ctx) => {
+  previousCommand = "tomorrow_not_work";
+  commands.tomorrowNotWorkCommand(ctx, schedule, db);
 });
 
 bot.catch((err) => {

@@ -32,5 +32,5 @@ MOMENT_TZ=Europe/Madrid
 * /holidays
 * /add_holiday (remove if it exists)
 * /add_dayoff (remove if it exists)
-* /tomorrow_not_work
-* /today_not_work
+* /tomorrow_not_work (acts as switch)
+* /today_not_work (acts as switch)move if it exists)

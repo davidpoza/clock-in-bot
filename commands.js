@@ -5,7 +5,7 @@ const functions = require('./functions.js');
 /**
  * TODO: transform into pure function
  */
-module.exports.initJobsCommand=(ctx, schedule, db) => {
+initJobsCommand = (ctx, schedule, db) => {
   if (!schedule.scheduledJobs.globalTimer) {
     ctx.reply('Setting main and secondary jobs...');
     schedule.scheduleJob('globalTimer', '0 0 0 * * *', () => {
@@ -17,7 +17,7 @@ module.exports.initJobsCommand=(ctx, schedule, db) => {
   }
 };
 
-module.exports.clockInCommand=(ctx) => {
+clockInCommand = (ctx) => {
   functions.isFromMe(ctx, () => {
     Promise.resolve('OK')
     functions.loginRequest()
@@ -34,7 +34,7 @@ module.exports.clockInCommand=(ctx) => {
   });
 }
 
-module.exports.clockOutCommand=(ctx) => {
+clockOutCommand = (ctx) => {
   functions.isFromMe(ctx, () => {
       Promise.resolve('OK')
     functions.loginRequest()
@@ -51,7 +51,7 @@ module.exports.clockOutCommand=(ctx) => {
   });
 }
 
-module.exports.holidaysCommand=(ctx, db) => {
+holidaysCommand = (ctx, db) => {
   functions.isFromMe(ctx, () => {
     const holidays = db.get('holidays').value();
     const daysOff = db.get('daysOff').value();
@@ -68,7 +68,7 @@ module.exports.holidaysCommand=(ctx, db) => {
   });
 }
 
-module.exports.addRemoveDateCommand=(ctx, cal, msg) => {
+addRemoveDateCommand = (ctx, cal, msg) => {
   functions.isFromMe(ctx, () => {
     functions.launchCalendar(ctx, cal, msg);
   }, () => {
@@ -76,7 +76,7 @@ module.exports.addRemoveDateCommand=(ctx, cal, msg) => {
   });
 }
 
-module.exports.statusCommand=(ctx, schedule, db) => {
+statusCommand = (ctx, schedule, db) => {
   functions.isFromMe(ctx, () => {
     // reset jobs
     functions.setJobs(ctx, schedule, moment.tz(process.env.MOMENT_TZ), db);
@@ -103,3 +103,34 @@ module.exports.statusCommand=(ctx, schedule, db) => {
     ctx.reply('I don\'t know who you are... I\'ll ignore you.');
   });
 }
+
+todayNotWorkCommand = (ctx, schedule, db) => {
+  functions.isFromMe(ctx, () => {
+    const date = moment.tz(process.env.MOMENT_TZ).format('YYYY-MM-DD');
+    functions.insertDeleteDay(ctx, db, date, 'daysOff');
+    // reset jobs
+    statusCommand(ctx, schedule, db);
+  }, () => {
+    ctx.reply('I don\'t know who you are... I\'ll ignore you.');
+  });
+}
+
+tomorrowNotWorkCommand = (ctx, schedule, db) => {
+  functions.isFromMe(ctx, () => {
+    const date = moment.tz(process.env.MOMENT_TZ).add(1, 'days').format('YYYY-MM-DD');
+    functions.insertDeleteDay(ctx, db, date, 'daysOff');
+    // reset jobs
+    statusCommand(ctx, schedule, db);
+  }, () => {
+    ctx.reply('I don\'t know who you are... I\'ll ignore you.');
+  });
+}
+
+module.exports.initJobsCommand = initJobsCommand;
+module.exports.clockInCommand = clockInCommand;
+module.exports.clockOutCommand = clockOutCommand;
+module.exports.holidaysCommand = holidaysCommand;
+module.exports.addRemoveDateCommand = addRemoveDateCommand;
+module.exports.statusCommand = statusCommand;
+module.exports.todayNotWorkCommand = todayNotWorkCommand;
+module.exports.tomorrowNotWorkCommand = tomorrowNotWorkCommand;
