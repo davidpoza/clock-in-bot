@@ -191,19 +191,27 @@ insertDeleteDay = (ctx, db, date, type) => {
     holidays.splice( holidays.indexOf(formatedDate), 1 );
     db.set('holidays', holidays)
       .write();
-    ctx.reply(`${formatedDate} has been removed to your holidays calendar.`);
+    ctx.replyWithMarkdown(`*${formatedDate}* has been removed to your holidays calendar.`);
   } else if (type === 'daysOff' && daysOff.includes(formatedDate)) {
     daysOff.splice( daysOff.indexOf(formatedDate), 1 );
     db.set('daysOff', daysOff)
       .write();
-    ctx.reply(`${formatedDate} has been removed to your daysOff calendar.`);
+    ctx.replyWithMarkdown(`*${formatedDate}* has been removed to your daysOff calendar.`);
   } else {
     db.get(type)
       .push(formatedDate)
       .write();
-    ctx.reply(`${formatedDate} has been added to your ${type} calendar.`);
+    ctx.replyWithMarkdown(`*${formatedDate}* has been added to your ${type} calendar.`);
   }
 };
+
+sortDatesArray = (array) => {
+  return array.sort((a, b) => {
+    a = new moment(a, 'DD/MM/YYYY', process.env.MOMENT_TZ);
+    b = new moment(b, 'DD/MM/YYYY', process.env.MOMENT_TZ);
+    return a.isBefore(b) ? -1 : b.isBefore(a) ? 1 : 0;
+  });
+}
 
 module.exports.isFromMe = isFromMe;
 module.exports.getChatId = getChatId;
@@ -220,3 +228,4 @@ module.exports.isToday = isToday;
 module.exports.jobExecuted = jobExecuted;
 module.exports.launchCalendar = launchCalendar;
 module.exports.insertDeleteDay = insertDeleteDay;
+module.exports.sortDatesArray = sortDatesArray;
