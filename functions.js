@@ -4,7 +4,7 @@ const get = require('lodash.get');
 const fetch = require('node-fetch');
 const commands = require('./commands.js');
 
-isFromMe = (ctx, fn, fn_anonymous=() => { ctx.reply("I don't know who you are... I'll ignore you."); }) => {
+isFromMe = (ctx, fn, fn_anonymous=() => { ctx.reply(`I don't know who you are... I'll ignore you.`); }) => {
   get(ctx, 'update.message.from.username') === process.env.TELEGRAM_USERNAME ? fn() : fn_anonymous && fn_anonymous();
 };
 
@@ -27,8 +27,8 @@ isWorkday = (date, db) => {
 
 /* returns hour in format HH:MM between min and max */
 randomHour = (min, max) => {
-  let min_timestamp = moment(`${min} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
-  let max_timestamp = moment(`${max} 01/01/2019`, "HH:mm DD/MM/YYYY").unix();
+  let min_timestamp = moment(`${min} 01/01/2019`, 'HH:mm DD/MM/YYYY').unix();
+  let max_timestamp = moment(`${max} 01/01/2019`, 'HH:mm DD/MM/YYYY').unix();
   let result_timestamp = Math.floor(Math.random() * (max_timestamp - min_timestamp)) + min_timestamp;
   return (moment(new Date(result_timestamp*1000)).format('HH:mm'));
 }
@@ -51,7 +51,7 @@ loginRequest = () => {
   return fetch(process.env.BASE_URL+process.env.LOGIN_URL, {
     method: 'POST',
     credentials: 'include',
-    mode: "cors",
+    mode: 'cors',
     headers: {
       'Accept-Encoding': 'gzip, deflate',
       'Connection': 'keep-alive',
@@ -71,7 +71,7 @@ loginRequest = () => {
 clockInOutRequest = (cookie, endpoint) => {
   return fetch(process.env.BASE_URL+endpoint, {
     method: 'POST',
-    mode: "cors",
+    mode: 'cors',
     credentials: 'include',
     headers: {
       'Accept-Encoding': 'gzip, deflate',
@@ -107,10 +107,10 @@ setJobs = (ctx, schedule, day, db) => {
 
   if (clockInTimer && clockInTimer.nextInvocation() !== null) { //if clockIn passed (nextInvocation is null) then not cancel clockOut
     clockInTimer.cancel(); //cancel() totally deletes the job from schedule.
-    console.log("cancelling clockInTimer");
+    console.log('cancelling clockInTimer');
     if (clockOutTimer) {
       clockOutTimer.cancel();
-      console.log("cancelling clockOutTimer");
+      console.log('cancelling clockOutTimer');
     }
   }
   // since objects have changed, we point them again
@@ -132,16 +132,17 @@ setJobs = (ctx, schedule, day, db) => {
       const j = schedule.scheduleJob('clockInTimer', clockInHour.toDate(), () => {
         commands.clockInCommand(ctx);
       });
-      j && isToday(day) && ctx.reply(`I'm going to start work at ${clockInHour.format("HH:mm")}`);
-      j && !isToday(day) && ctx.reply(`I'm going to start work on ${clockInHour.format("dddd D [at] HH:mm")}`);
+
+      j && isToday(day) && ctx.reply(`I'm going to start work at ${clockInHour.format('HH:mm')}`);
+      j && !isToday(day) && ctx.reply(`I'm going to start work on ${clockInHour.format('dddd D [at] HH:mm')}`);
     }
     // only reschedule if previously timer has been cancelled.
     if(!clockOutTimer) {
       const j = schedule.scheduleJob('clockOutTimer', clockOutHour.toDate(), () => {
         commands.clockOutCommand(ctx);
       });
-      j && isToday(day) && ctx.reply(`I'm going to finish work at ${clockOutHour.format("HH:mm")}`);
-      j && !isToday(day) && ctx.reply(`I'm going to finish work on ${clockOutHour.format("dddd D [at] HH:mm")}`);
+      j && isToday(day) && ctx.reply(`I'm going to finish work at ${clockOutHour.format('HH:mm')}`);
+      j && !isToday(day) && ctx.reply(`I'm going to finish work on ${clockOutHour.format('dddd D [at] HH:mm')}`);
     }
   }
 };

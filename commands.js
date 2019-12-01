@@ -19,12 +19,12 @@ module.exports.initJobsCommand=(ctx, schedule, db) => {
 
 module.exports.clockInCommand=(ctx) => {
   functions.isFromMe(ctx, () => {
-    Promise.resolve("OK")
+    Promise.resolve('OK')
     //functions.loginRequest()
       .then((res) => {
         const jsessionid=functions.parseCookie(res.headers.raw()['set-cookie']);
         //return functions.clockInOutRequest(jsessionid, process.env.START_WORK_ENDPOINT);
-        return Promise.resolve("OK");
+        return Promise.resolve('OK');
       })
       .then((res) => {
         ctx.reply('I\'ve just clock-in my friend.👍');
@@ -37,12 +37,12 @@ module.exports.clockInCommand=(ctx) => {
 
 module.exports.clockOutCommand=(ctx) => {
   functions.isFromMe(ctx, () => {
-      Promise.resolve("OK")
+      Promise.resolve('OK')
     //functions.loginRequest()
       .then((res) => {
         const jsessionid = functions.parseCookie(res.headers.raw()['set-cookie']);
         //return functions.clockInOutRequest(jsessionid, process.env.END_WORK_ENDPOINT);
-        return Promise.resolve("OK");
+        return Promise.resolve('OK');
       })
       .then((res) => {
         ctx.reply('I\'ve just clock-out!!. What such a hard working day👏🏼.');
@@ -89,7 +89,7 @@ module.exports.statusCommand=(ctx, schedule, db) => {
     const start = clockInTimer && clockInTimer.nextInvocation();
     const end = clockOutTimer && clockOutTimer.nextInvocation();
     if (start === null && end) {
-      ctx.reply(`I'm at work right now but it ends at ${moment.tz(new Date(end), process.env.MOMENT_TZ).format("HH:mm")}`);
+      ctx.reply(`I'm at work right now but it ends at ${moment.tz(new Date(end), process.env.MOMENT_TZ).format('HH:mm')}`);
     }
     if (!start && !end) {
       //we try with tomorrow

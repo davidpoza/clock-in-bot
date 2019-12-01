@@ -15,10 +15,10 @@ db.defaults({ holidays: [], daysOff: [] })
 const bot=new Telegraf(process.env.BOT_TOKEN);
 const calProps = {
 	startWeekDay: 1,
-	weekDayNames: ["L", "M", "M", "G", "V", "S", "D"],
+	weekDayNames: ['L', 'M', 'M', 'G', 'V', 'S', 'D'],
 	monthNames: [
-		"Ene", "Feb", "Mar", "Abr", "May", "Jun",
-		"Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+		'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+		'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
 	]
 };
 const calDaysOff = new calendar(bot, calProps);
@@ -83,16 +83,16 @@ calHolidays.setDateListener((ctx, date) => {
   functions.insertDeleteDay(ctx, db, date, 'holidays');
 });
 
-bot.command("add_holiday", (ctx) => {
+bot.command('add_holiday', (ctx) => {
   commands.addRemoveDateCommand(ctx, calHolidays, 'Select day to be added/removed from your holidays: ');
 });
 
-bot.command("add_dayoff", (ctx) => {
+bot.command('add_dayoff', (ctx) => {
   commands.addRemoveDateCommand(ctx, calDaysOff, 'Select day to be added/removed from your daysOff: ');
 });
 
 bot.catch((err) => {
-	console.log("Error in bot:", err);
+	console.log('Error in bot:', err);
 });
 
 
