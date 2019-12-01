@@ -34,9 +34,17 @@ clockInCommand = (ctx) => {
       })
       .then((res) => {
         ctx.reply('I\'ve just clock-in my friend.👍');
+        return functions.loginRequest();
+      })
+      .then((res) => {
+        return res.text(); //we log in again to check if clock-in had effect
+      })
+      .then((data) => {
+        if (!data.includes(`top " onclick="marcarFinJornada()`))
+          throw new Error('Clock-in not registered');
       })
       .catch((err) => {
-        ctx.reply('Error ocurred on clock-in: ', err);
+        ctx.reply('Error ocurred on clock-in');
       });
   });
 }
@@ -53,9 +61,17 @@ clockOutCommand = (ctx) => {
       })
       .then((res) => {
         ctx.reply('I\'ve just clock-out!!. What such a hard working day👏🏼.');
+        return functions.loginRequest();
+      })
+      .then((res) => {
+        return res.text(); //we log in again to check if clock-out had effect
+      })
+      .then((data) => {
+        if (!data.includes(`top oculto" onclick="marcarFinJornada()`))
+          throw new Error('Clock-out not registered');
       })
       .catch((err) => {
-        ctx.reply('Error ocurred on clock-out: ', err);
+        ctx.reply('Error ocurred on clockOutCommand');
       });
   });
 }
