@@ -3,7 +3,12 @@ const moment = require('moment-timezone');
 const functions = require('./functions.js');
 
 /**
- * TODO: transform into pure function
+ * Initializes the main timer, which will schedule the others every night.
+ * If is executed multiple times then check if globalTimer is already defined
+ * to avoid repeated timers.
+ * @param {Object} ctx - Telegram message context
+ * @param {Object} schedule - node-schedule Object reference, tracks all timers.
+ * @param {Object} db - lowdb database Object reference
  */
 initJobsCommand = (ctx, schedule, db) => {
   if (!schedule.scheduledJobs.globalTimer) {
@@ -17,9 +22,11 @@ initJobsCommand = (ctx, schedule, db) => {
   }
 };
 
+/**
+ * @param {Object} ctx - Telegram message context
+ */
 clockInCommand = (ctx) => {
   functions.isFromMe(ctx, () => {
-    Promise.resolve('OK')
     functions.loginRequest()
       .then((res) => {
         const jsessionid=functions.parseCookie(res.headers.raw()['set-cookie']);
@@ -34,9 +41,11 @@ clockInCommand = (ctx) => {
   });
 }
 
+/**
+ * @param {Object} ctx - Telegram message context
+ */
 clockOutCommand = (ctx) => {
   functions.isFromMe(ctx, () => {
-      Promise.resolve('OK')
     functions.loginRequest()
       .then((res) => {
         const jsessionid = functions.parseCookie(res.headers.raw()['set-cookie']);
@@ -51,6 +60,9 @@ clockOutCommand = (ctx) => {
   });
 }
 
+/**
+ * Returns a sorted list of all dates within holidays and daysOff arrays.
+ */
 holidaysCommand = (ctx, db) => {
   functions.isFromMe(ctx, () => {
     const holidays = db.get('holidays').value();
@@ -68,6 +80,13 @@ holidaysCommand = (ctx, db) => {
   });
 }
 
+/**
+ * This command works like a switch: First we are asked for a date (using calendar).
+ * Afterward it checks if date already exists in holidays array. If it doesn't exist
+ * we insert it, but we remove it if does. Finally statusCommand is called to reload the timer jobs,
+ * to take new dates into account.
+ * @param {Object} ctx - Telegram message context
+ */
 addRemoveDateCommand = (ctx, cal, msg) => {
   functions.isFromMe(ctx, () => {
     functions.launchCalendar(ctx, cal, msg);
@@ -76,6 +95,11 @@ addRemoveDateCommand = (ctx, cal, msg) => {
   });
 }
 
+/**
+ * @param {Object} ctx - Telegram message context
+ * @param {Object} schedule - node-schedule Object reference, tracks all timers.
+ * @param {Object} db - lowdb database Object reference
+ */
 statusCommand = (ctx, schedule, db) => {
   functions.isFromMe(ctx, () => {
     // reset jobs
@@ -104,6 +128,11 @@ statusCommand = (ctx, schedule, db) => {
   });
 }
 
+/**
+ * @param {Object} ctx - Telegram message context
+ * @param {Object} schedule - node-schedule Object reference, tracks all timers.
+ * @param {Object} db - lowdb database Object reference
+ */
 todayNotWorkCommand = (ctx, schedule, db) => {
   functions.isFromMe(ctx, () => {
     const date = moment.tz(process.env.MOMENT_TZ).format('YYYY-MM-DD');
@@ -115,6 +144,11 @@ todayNotWorkCommand = (ctx, schedule, db) => {
   });
 }
 
+/**
+ * @param {Object} ctx - Telegram message context
+ * @param {Object} schedule - node-schedule Object reference, tracks all timers.
+ * @param {Object} db - lowdb database Object reference
+ */
 tomorrowNotWorkCommand = (ctx, schedule, db) => {
   functions.isFromMe(ctx, () => {
     const date = moment.tz(process.env.MOMENT_TZ).add(1, 'days').format('YYYY-MM-DD');

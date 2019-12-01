@@ -4,14 +4,25 @@ const get = require('lodash.get');
 const fetch = require('node-fetch');
 const commands = require('./commands.js');
 
-isFromMe = (ctx, fn, fn_anonymous=() => { ctx.reply(`I don't know who you are... I'll ignore you.`); }) => {
-  get(ctx, 'update.message.from.username') === process.env.TELEGRAM_USERNAME ? fn() : fn_anonymous && fn_anonymous();
+/**
+ * Executes fn() passed as parameter if message is sent by TELEGRAM_USERNAME user, set on .env file.
+ * Otherwise execute anonymousFn().
+ * @param {Object} ctx - Telegram message context
+ */
+isFromMe = (ctx, fn, anonymousFn = () => { ctx.reply(`I don't know who you are... I'll ignore you.`); }) => {
+  get(ctx, 'update.message.from.username') === process.env.TELEGRAM_USERNAME ? fn() : fn_anonymous && anonymousFn();
 };
 
 getChatId = (ctx) => {
   return get(ctx, 'update.message.chat.id');
 }
 
+/**
+ * Check if date provided as parameter is a working day.
+ * It achieves that by reading current holidays and daysOff arrays from db.
+ * @param {Object} date - Date as moment object.
+ * @param {Object} db - lowdb database Object reference
+ */
 isWorkday = (date, db) => {
   const holidays = db.get('holidays').value();
   const daysOff = db.get('daysOff').value();
@@ -25,7 +36,11 @@ isWorkday = (date, db) => {
   return true;
 }
 
-/* returns hour in format HH:MM between min and max */
+/**
+ * Returns random hour in format HH:MM between given min and max.
+ * @param {string} min - Minimum hour (included) e.g: 14:20
+ * @param {string} max - Maximum hour (included): e.g: 16:33
+ */
 randomHour = (min, max) => {
   let min_timestamp = moment(`${min} 01/01/2019`, 'HH:mm DD/MM/YYYY').unix();
   let max_timestamp = moment(`${max} 01/01/2019`, 'HH:mm DD/MM/YYYY').unix();
@@ -33,6 +48,11 @@ randomHour = (min, max) => {
   return (moment(new Date(result_timestamp*1000)).format('HH:mm'));
 }
 
+/**
+ * Returns random number between given min and max.
+ * @param {number} min - Minimum hour (included) e.g: 14:20
+ * @param {number} max - Maximum hour (included): e.g: 16:33
+ */
 randomNumber = (min, max) => {
   return (Math.floor(Math.random() * (max - min)) + min);
 }
@@ -89,18 +109,12 @@ clockInOutRequest = (cookie, endpoint) => {
   });
 }
 /**
- * TODO: transform into pure function
  * Rescheduling of jobs to take into account daysOff changes.
- * Doesn't reset clockOutTimer if clockInTimer.nextInvocation === null,
- * that's said: a clock-in has happend.
- * We don't want desynchronize/break a cycle in process.
- * In short: clockOutTimer only can be cancelled if we are cancelling
- * clockInTimer first.
- * @param ctx {Object}: telegraf context
- * @param schedule {Object}: node-schedule object
- * @param day {Object}: moment day for which we're setting the timers
- * @param daysOff {Array<string>}: days-off dates list
- * @param holidays {Array<string>}: holidays dates list
+ * clockOutTimer only can be cancelled if we are cancelling clockInTimer first.
+ * @param {Object} ctx - Telegram message context
+ * @param {Object} schedule - node-schedule Object reference, tracks all timers.
+ * @param {Object} day - moment day for which we're setting the timers
+ * @param {Object} db - lowdb database Object reference
  */
 setJobs = (ctx, schedule, day, db) => {
   let { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
@@ -156,8 +170,12 @@ jobRangeToString = (j1, j2) => {
   `);
 }
 
-isToday = (day) => {
-  return (moment.tz(process.env.MOMENT_TZ).isSame(day))
+/**
+ * Check is date param provided is within current day.
+ * @param date {Object}: Date as moment date Object.
+ */
+isToday = (date) => {
+  return (moment.tz(process.env.MOMENT_TZ).isSame(date, 'day'))
 }
 
 /**
@@ -172,6 +190,13 @@ jobExecuted = (timer) => {
   );
 }
 
+/**
+ * Creates a response which displays calendar.
+ * When we tap into a date an event is triggered and handled by function set with setDateListener(function)
+ * @param {Object} ctx - Telegram message context
+ * @param {Object} cal - Calendar Object
+ * @param {string} msg - Text displayed just before calendar.
+ */
 launchCalendar = (ctx, cal, msg) => {
   const today = new Date();
 	const minDate = new Date();
@@ -183,6 +208,15 @@ launchCalendar = (ctx, cal, msg) => {
 	ctx.reply(msg, cal.setMinDate(minDate).setMaxDate(maxDate).getCalendar())
 };
 
+
+/**
+ * Receives a date as string and inserts it into array passed as *type* parameter if
+ * that doesn't already exist, or deletes it if does.
+ * @param {Object} ctx - Telegram message context
+ * @param {Object} db - lowdb database Object reference
+ * @param {string} date - Date as string formatted as YYYY-MM-DD
+ * @param {string} type - Target array. Can be 'holidays' or 'daysOff'
+ */
 insertDeleteDay = (ctx, db, date, type) => {
   if (type !== 'holidays' && type !== 'daysOff') return;
   const formatedDate = moment.tz(date, 'YYYY-MM-DD', process.env.MOMENT_TZ).format('DD/MM/YYYY');
@@ -206,6 +240,10 @@ insertDeleteDay = (ctx, db, date, type) => {
   }
 };
 
+/**
+ * Sorts ascendently a given dates string array.
+ * The string have the DD/MM/YYYY format.
+ */
 sortDatesArray = (array) => {
   return array.sort((a, b) => {
     a = new moment(a, 'DD/MM/YYYY', process.env.MOMENT_TZ);

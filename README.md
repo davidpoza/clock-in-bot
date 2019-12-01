@@ -1,4 +1,7 @@
+
 # Description
+
+![](https://img.shields.io/badge/status-working-green) ![](https://img.shields.io/badge/built_with-node.js-%2351c93d) ![](https://img.shields.io/badge/built_with-docker-blue)
 
 This is a Telegram bot which is able to automatically clock-in and clock-out in an hypothetical company presence control system.
 It takes into account holidays, days off, lunch time or schedule cancelation.

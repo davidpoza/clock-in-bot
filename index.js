@@ -10,15 +10,16 @@ const functions = require('./functions.js');
 
 const adapter = new FileSync('db.json');
 const db = low(adapter);
+// The string of following date arrays have the DD/MM/YYYY format.
 db.defaults({ holidays: [], daysOff: [] })
   .write();
 const bot=new Telegraf(process.env.BOT_TOKEN);
 const calProps = {
 	startWeekDay: 1,
-	weekDayNames: ['L', 'M', 'M', 'G', 'V', 'S', 'D'],
+	weekDayNames: ['M', 'T', 'W', 'T', 'F', 'Sa', 'Su'],
 	monthNames: [
-		'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-		'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+		'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+		'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 	]
 };
 const cal = new calendar(bot, calProps);
@@ -40,16 +41,25 @@ bot.start((ctx) => {
   });
 });
 
+/**
+ * Calls login a clock-in endpoints
+ */
 bot.command('clock_in', (ctx) => {
   previousCommand = "clock_in";
   commands.clockInCommand(ctx);
 });
 
+/**
+ * Calls login a clock-out endpoints
+ */
 bot.command('clock_out', (ctx) => {
   previousCommand = "clock_out";
   commands.clockOutCommand(ctx);
 });
 
+/**
+ * Displays a full list of all available bot commands
+ */
 bot.help((ctx) => {
   ctx.reply(`Available commands are:
   * /help
@@ -70,13 +80,16 @@ bot.command('status', (ctx) => {
   commands.statusCommand(ctx, schedule, db);
 });
 
+/**
+ * Returns a sorted list of all dates within holidays and daysOff arrays.
+ */
 bot.command('holidays', (ctx) => {
   previousCommand = "holidays";
   commands.holidaysCommand(ctx, db);
 });
 
 /**
- * listen for the selected date event, calendar needs it for working.
+ * listen for the date selecting tap event, calendar needs it for working.
  * Also receives selected date with following format: YYYY-MM-DD
  */
 cal.setDateListener((ctx, date) => {
@@ -87,21 +100,43 @@ cal.setDateListener((ctx, date) => {
   }
 });
 
+/**
+ * This command works like a switch: First we are asked for a date (using calendar).
+ * Afterward it checks if date already exists in holidays array. If it doesn't exist
+ * we insert it, but we remove it if does. Finally statusCommand is called to reload the timer jobs,
+ * to take new dates into account.
+ */
 bot.command('add_holiday', (ctx) => {
   previousCommand = "add_holiday";
   commands.addRemoveDateCommand(ctx, cal, 'Select day to be added/removed from your holidays: ');
 });
 
+/**
+ * This command works like a switch: First we are asked for a date (using calendar).
+ * Afterward it checks if date already exists in daysOff array. If it doesn't exist
+ * we insert it, but we remove it if does. Finally statusCommand is called to reload the timer jobs,
+ * to take new dates into account.
+ */
 bot.command('add_dayoff', (ctx) => {
   previousCommand = "add_dayoff";
   commands.addRemoveDateCommand(ctx, cal, 'Select day to be added/removed from your daysOff: ');
 });
 
+/**
+ * This command works like a switch: by adding today date to daysOff array, and then calling
+ * statusCommand to reload the timer jobs, to take new dates into account.
+ * Nevertheless if today date already exists in array, then we remove it.
+ */
 bot.command('today_not_work', (ctx) => {
   previousCommand = "today_not_work";
   commands.todayNotWorkCommand(ctx, schedule, db);
 });
 
+/**
+ * This command works by adding tomorrow date to daysOff array, and then calling
+ * statusCommand to reload the timer jobs, to take new dates into account.
+ * Nevertheless if tomorrow date already exists in array, then we remove it.
+ */
 bot.command('tomorrow_not_work', (ctx) => {
   previousCommand = "tomorrow_not_work";
   commands.tomorrowNotWorkCommand(ctx, schedule, db);
