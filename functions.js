@@ -157,7 +157,7 @@ jobRangeToString = (j1, j2) => {
 }
 
 isToday = (day) => {
-  return (moment.tz(process.env.MOMENT_TZ).diff(day, 'days') === 0)
+  return (moment.tz(process.env.MOMENT_TZ).isSame(day))
 }
 
 /**
