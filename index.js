@@ -21,12 +21,12 @@ const calProps = {
 		'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
 	]
 };
-const calDaysOff = new calendar(bot, calProps);
-const calHolidays = new calendar(bot, calProps);
-
+const cal = new calendar(bot, calProps);
 let chatId;
+let previousCommand = "";
 
 bot.start((ctx) => {
+  previousCommand = "start";
   functions.isFromMe(ctx, () => {
     if (!chatId) {
       ctx.reply(`Welcome ${process.env.TELEGRAM_USERNAME}!`);
@@ -41,10 +41,12 @@ bot.start((ctx) => {
 });
 
 bot.command('clock_in', (ctx) => {
+  previousCommand = "clock_in";
   commands.clockInCommand(ctx);
 });
 
 bot.command('clock_out', (ctx) => {
+  previousCommand = "clock_out";
   commands.clockOutCommand(ctx);
 });
 
@@ -64,10 +66,12 @@ bot.help((ctx) => {
 });
 
 bot.command('status', (ctx) => {
+  previousCommand = "status";
   commands.statusCommand(ctx, schedule, db);
 });
 
 bot.command('holidays', (ctx) => {
+  previousCommand = "holidays";
   commands.holidaysCommand(ctx, db);
 });
 
@@ -75,26 +79,26 @@ bot.command('holidays', (ctx) => {
  * listen for the selected date event, calendar needs it for working.
  * Also receives selected date with following format: YYYY-MM-DD
  */
-calDaysOff.setDateListener((ctx, date) => {
-  functions.insertDeleteDay(ctx, db, date, 'daysOff');
-});
-
-calHolidays.setDateListener((ctx, date) => {
-  functions.insertDeleteDay(ctx, db, date, 'holidays');
+cal.setDateListener((ctx, date) => {
+  if (previousCommand === 'add_holiday') {
+    date && functions.insertDeleteDay(ctx, db, date, 'holidays');
+  } else if (previousCommand === 'add_dayoff'){
+    date && functions.insertDeleteDay(ctx, db, date, 'daysOff');
+  }
 });
 
 bot.command('add_holiday', (ctx) => {
-  commands.addRemoveDateCommand(ctx, calHolidays, 'Select day to be added/removed from your holidays: ');
+  previousCommand = "add_holiday";
+  commands.addRemoveDateCommand(ctx, cal, 'Select day to be added/removed from your holidays: ');
 });
 
 bot.command('add_dayoff', (ctx) => {
-  commands.addRemoveDateCommand(ctx, calDaysOff, 'Select day to be added/removed from your daysOff: ');
+  previousCommand = "add_dayoff";
+  commands.addRemoveDateCommand(ctx, cal, 'Select day to be added/removed from your daysOff: ');
 });
 
 bot.catch((err) => {
 	console.log('Error in bot:', err);
 });
 
-
 bot.startPolling();
-

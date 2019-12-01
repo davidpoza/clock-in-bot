@@ -175,9 +175,9 @@ jobExecuted = (timer) => {
 launchCalendar = (ctx, cal, msg) => {
   const today = new Date();
 	const minDate = new Date();
-	minDate.setMonth(today.getMonth() - 2);
+	minDate.setMonth(today.getMonth() - 1);
 	const maxDate = new Date();
-	maxDate.setMonth(today.getMonth() + 2);
+	maxDate.setMonth(today.getMonth() + 24);
 	maxDate.setDate(today.getDate());
 
 	ctx.reply(msg, cal.setMinDate(minDate).setMaxDate(maxDate).getCalendar())
