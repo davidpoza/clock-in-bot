@@ -87,7 +87,7 @@ holidaysCommand = (ctx, db) => {
     functions.sortDatesArray(holidays);
     functions.sortDatesArray(daysOff);
 
-    ctx.replyWithMarkdown(`*Your holdays are*: \n ---------------------------
+    ctx.replyWithMarkdown(`*Next holidays are*: \n ---------------------------
     ${holidays.length === 0 ? '_there are no holidays_' : '- ' + holidays.join('\n- ')}`.replace(/  +/g, ''));
     ctx.replyWithMarkdown(`*Your days-off are*: \n ---------------------------
     ${daysOff.length === 0 ? '_there are no days-off_': '- ' + daysOff.join('\n- ')}`.replace(/  +/g, ''));

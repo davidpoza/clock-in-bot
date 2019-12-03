@@ -118,14 +118,14 @@ clockInOutRequest = (cookie, endpoint) => {
  */
 setJobs = (ctx, schedule, day, db) => {
   let { clockInTimer, clockOutTimer } = schedule.scheduledJobs;
-
-  if (clockInTimer && clockInTimer.nextInvocation() !== null) { //if clockIn passed (nextInvocation is null) then not cancel clockOut
-    clockInTimer.cancel(); //cancel() totally deletes the job from schedule.
-    console.log('cancelling clockInTimer');
-    if (clockOutTimer) {
-      clockOutTimer.cancel();
+  if (clockInTimer) {
+    if (clockOutTimer && (clockInTimer.nextInvocation() !== null || clockOutTimer.nextInvocation() === null) ) {
+      //if clockIn passed (nextInvocation is null) then not cancel clockOut
       console.log('cancelling clockOutTimer');
+      clockOutTimer.cancel();
     }
+    console.log('cancelling clockInTimer');
+    clockInTimer.cancel(); //cancel() totally deletes the job from schedule.
   }
   // since objects have changed, we point them again
   clockInTimer = schedule.scheduledJobs.clockInTimer;
@@ -182,7 +182,6 @@ isToday = (date) => {
  * checks if timer next invocation has passed
  */
 jobExecuted = (timer) => {
-  console.log(timer.nextInvocation())
   return (
     moment.tz(
       new Date(timer.nextInvocation), process.env.MOMENT_TZ
