@@ -8,7 +8,10 @@ services:
       - .env
     ports:
       - "12121:80"
+    volumes:
+      - clockinbot:/usr/src/app
     networks:
       - default
 
-
+volumes:
+  clockinbot:
